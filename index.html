@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dr. Reju-All Amazon Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root {
+    --bg:       #0d1117;
+    --surface:  #161b22;
+    --card:     #1c2230;
+    --border:   #2d3748;
+    --blue:     #6c8ef7;
+    --green:    #10b981;
+    --red:      #ef4444;
+    --yellow:   #f59e0b;
+    --pink:     #ec4899;
+    --text:     #e2e8f0;
+    --muted:    #8b9ab2;
+    --radius:   12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── Header ──────────────────────────────── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo { font-size: 20px; font-weight: 700; color: var(--blue); }
+  .logo span { color: var(--text); font-weight: 400; font-size: 14px; margin-left: 8px; }
+  .updated { font-size: 11px; color: var(--muted); }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .period-btns { display: flex; gap: 4px; }
+  .period-btn {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+  .period-btn.active {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+  }
+  .period-btn:hover:not(.active) { border-color: var(--blue); color: var(--text); }
+
+  /* ── Dropdowns ───────────────────────────── */
+  .filter-group { display: flex; align-items: center; gap: 8px; }
+  .filter-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .filter-select {
+    padding: 6px 28px 6px 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b9ab2'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    transition: border-color 0.15s;
+    min-width: 80px;
+  }
+  .filter-select:hover, .filter-select:focus {
+    border-color: var(--blue);
+    outline: none;
+  }
+  .filter-divider {
+    width: 1px; height: 20px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+  .filter-reset {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .filter-reset:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Layout ──────────────────────────────── */
+  .main { padding: 20px 24px; max-width: 1600px; margin: 0 auto; }
+
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .span-2 { grid-column: span 2; }
+  .span-3 { grid-column: span 3; }
+
+  /* ── Card ────────────────────────────────── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ── KPI Cards ───────────────────────────── */
+  .kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+  .kpi-value.blue  { color: var(--blue); }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.yellow{ color: var(--yellow); }
+  .kpi-value.pink  { color: var(--pink); }
+
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .badge.up   { background: rgba(16,185,129,0.15); color: var(--green); }
+  .badge.down { background: rgba(239,68,68,0.15);  color: var(--red); }
+
+  /* ── Chart wrapper ───────────────────────── */
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+  }
+  .chart-wrap canvas { display: block; }
+
+  /* ── Toggle tabs inside card ─────────────── */
+  .toggle-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+  .toggle-btn {
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.15s;
+  }
+  .toggle-btn.active {
+    background: rgba(108,142,247,0.15);
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+
+  /* ── Funnel ──────────────────────────────── */
+  .funnel-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .funnel-row { display: flex; flex-direction: column; gap: 4px; }
+  .funnel-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .funnel-label span:last-child { color: var(--text); font-weight: 600; }
+  .funnel-bar-bg {
+    height: 10px;
+    background: var(--border);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .funnel-bar {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.4s ease;
+  }
+
+  /* ── Product selector ────────────────────── */
+  .product-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .prod-tab {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+  .prod-tab.active { color: #fff; border-color: transparent; }
+
+  /* ── WoW table ───────────────────────────── */
+  .wow-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .wow-table th {
+    text-align: left;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .wow-table td { padding: 6px 8px; border-bottom: 1px solid rgba(45,55,72,0.5); }
+  .wow-table tr:last-child td { border-bottom: none; }
+  .pos { color: var(--green); font-weight: 600; }
+  .neg { color: var(--red); font-weight: 600; }
+
+  /* ── Loading / error ─────────────────────── */
+  #loading {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px; z-index: 999;
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #error-banner {
+    display: none;
+    background: rgba(239,68,68,0.1);
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 12px 18px;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+
+  /* ── Section header ──────────────────────── */
+  .section-header {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-header::before {
+    content: '';
+    display: inline-block;
+    width: 3px; height: 14px;
+    border-radius: 2px;
+    background: var(--blue);
+  }
+
+  @media (max-width: 900px) {
+    .grid-4, .grid-3 { grid-template-columns: 1fr 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .span-2, .span-3 { grid-column: span 1; }
+  }
+  @media (max-width: 600px) {
+    .grid-4 { grid-template-columns: 1fr; }
+    .header { flex-direction: column; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p style="color:var(--muted);font-size:13px;">데이터 불러오는 중...</p>
+</div>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">Dr. Reju-All <span>Amazon 미국 판매 대시보드</span></div>
+    <span class="updated" id="updatedAt"></span>
+  </div>
+  <div class="header-right">
+    <!-- 연도/월 필터 -->
+    <div class="filter-group">
+      <span class="filter-label">기간</span>
+      <select class="filter-select" id="filterYear">
+        <option value="">전체 연도</option>
+      </select>
+      <select class="filter-select" id="filterMonth">
+        <option value="">전체 월</option>
+      </select>
+      <span class="filter-label" style="margin-left:8px">사용자 지정</span>
+      <input type="date" class="filter-select" id="filterFrom" style="padding:6px 8px">
+      <span style="color:#8b9ab2">~</span>
+      <input type="date" class="filter-select" id="filterTo" style="padding:6px 8px">
+      <button class="filter-reset" id="filterReset">초기화</button>
+    </div>
+  </div>
+</header>
+
+<main class="main" id="mainContent" style="display:none">
+  <div id="error-banner"></div>
+
+  <!-- ① KPI 카드 -->
+  <div class="section-header">메인 KPI 요약</div>
+  <div class="grid-4" id="kpiCards">
+    <div class="card">
+      <div class="card-title">총 매출 (Ordered Sales)</div>
+      <div class="kpi-value blue" id="kpiRevenue">—</div>
+      <div class="kpi-sub" id="kpiRevenueUnits"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">총 판매 Units</div>
+      <div class="kpi-value green" id="kpiUnits">—</div>
+      <div class="kpi-sub" id="kpiUnitsB2B"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">평균 전환율 (CVR)</div>
+      <div class="kpi-value yellow" id="kpiCvr">—</div>
+      <div class="kpi-sub">Unit Session Percentage</div>
+    </div>
+    <div class="card">
+      <div class="card-title">총 세션</div>
+      <div class="kpi-value pink" id="kpiSessions">—</div>
+      <div class="kpi-sub" id="kpiPv"></div>
+    </div>
+  </div>
+
+  <!-- ② 매출 트렌드 -->
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card span-2">
+      <div class="card-title">
+        매출 트렌드 (Ordered Product Sales $)
+        <div class="toggle-row" style="margin:0">
+          <button class="toggle-btn active" data-chart="revenue" data-agg="daily">일별</button>
+          <button class="toggle-btn" data-chart="revenue" data-agg="weekly">주별</button>
+          <button class="toggle-btn" data-chart="revenue" data-agg="monthly">월별</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="chartRevenue"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ②-2 세션 트렌드 -->
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card span-2">
+      <div class="card-title">
+        세션 트렌드 (Sessions - Total)
+        <div class="toggle-row" style="margin:0">
+          <button class="toggle-btn active" data-chart="sessions" data-agg="daily">일별</button>
+          <button class="toggle-btn" data-chart="sessions" data-agg="weekly">주별</button>
+          <button class="toggle-btn" data-chart="sessions" data-agg="monthly">월별</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="chartSessions"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ②-3 제품별 세션 & 전환율 -->
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card span-2">
+      <div class="card-title">
+        제품별 세션 &amp; 전환율 추이
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="filter-select" id="productSelect" style="min-width:160px"></select>
+          <div class="toggle-row" style="margin:0">
+            <button class="toggle-btn active" data-chart="productTrend" data-agg="daily">일별</button>
+            <button class="toggle-btn" data-chart="productTrend" data-agg="weekly">주별</button>
+            <button class="toggle-btn" data-chart="productTrend" data-agg="monthly">월별</button>
+          </div>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:260px">
+        <canvas id="chartProductTrend"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ Units + WoW -->
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-title">
+        Units Ordered 트렌드
+        <div class="toggle-row" style="margin:0">
+          <button class="toggle-btn active" data-chart="units" data-agg="daily">일별</button>
+          <button class="toggle-btn" data-chart="units" data-agg="weekly">주별</button>
+          <button class="toggle-btn" data-chart="units" data-agg="monthly">월별</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="chartUnits"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">주차별 WoW 매출 성장률 (%)</div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="chartWow"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 트래픽 & 전환 퍼널 -->
+  <div class="section-header">트래픽 &amp; 전환 퍼널 (제품별)</div>
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-title">제품별 Sessions → Units → Conversion</div>
+      <div class="funnel-wrap" id="funnelWrap" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        전환율 (CVR) 트렌드
+        <div class="toggle-row" style="margin:0">
+          <button class="toggle-btn active" data-chart="cvr" data-agg="daily">일별</button>
+          <button class="toggle-btn" data-chart="cvr" data-agg="weekly">주별</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="chartCvr"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 제품별 성과 비교 -->
+  <div class="section-header">제품별 성과 비교</div>
+  <div class="grid-3" style="margin-bottom:20px">
+    <div class="card span-2">
+      <div class="card-title">제품별 매출 &amp; 세션 비교</div>
+      <div class="chart-wrap" style="height:260px">
+        <canvas id="chartProductCompare"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">제품별 전환율 비교</div>
+      <div class="chart-wrap" style="height:260px">
+        <canvas id="chartProductCvr"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ WoW 테이블 + 신제품 트래픽 -->
+  <div class="grid-2" style="margin-bottom:30px">
+    <div class="card">
+      <div class="card-title">주차별 WoW 상세 테이블</div>
+      <table class="wow-table" id="wowTable">
+        <thead>
+          <tr>
+            <th>주차</th>
+            <th>매출 ($)</th>
+            <th>WoW</th>
+            <th>Units</th>
+            <th>WoW</th>
+          </tr>
+        </thead>
+        <tbody id="wowTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">신제품 트래픽 비중 추이 (세션 기준)</div>
+      <div class="chart-wrap" style="height:280px">
+        <canvas id="chartSessionShare"></canvas>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+var STATE = {
+  raw: [],
+  filtered: [],
+  productMap: {},
+  knownAsins: [],
+  productColors: {},
+  period: 'daily',
+  charts: {},
+  chartAgg: { revenue: 'daily', sessions: 'daily', units: 'daily', cvr: 'daily', productTrend: 'daily' },
+  filterYear: '',
+  filterMonth: '',
+  filterFrom: '',
+  filterTo: '',
+  selectedProduct: ''
+};
+
+// ═══════════════════════════════════════════════════════
+//  BOOT — Apps Script Web API 호출 (fetch 방식)
+//  ↓↓↓ 배포 후 아래 URL을 본인의 /exec 주소로 교체 ↓↓↓
+// ═══════════════════════════════════════════════════════
+var API_URL = 'https://script.google.com/macros/s/AKfycbxrlKDlU0Wwsdo7FewUWwiWw45AUE6gMBx550FoaqdkhUVYtTIXnpMRltc04Ms5JRo56w/exec';
+
+window.onload = function () {
+  fetch(API_URL)
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(onDataLoaded)
+    .catch(function (e) {
+      onDataError(e && e.message ? e.message : String(e));
+    });
+};
+
+function onDataLoaded(resp) {
+  if (!resp.ok) { onDataError(resp.error); return; }
+  STATE.raw          = resp.rows        || [];
+  STATE.productMap   = resp.productMap  || {};
+  STATE.knownAsins   = resp.knownAsins  || [];
+  STATE.productColors= resp.productColors || {};
+
+  if (resp.updatedAt) {
+    var d = new Date(resp.updatedAt);
+    document.getElementById('updatedAt').textContent =
+      '최종 업데이트: ' + d.toLocaleString('ko-KR');
+  }
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+
+  buildFilterOptions();
+  buildProductDropdown();
+  bindControls();
+  applyFilter();
+}
+
+// 제품 드롭다운 옵션 채우기 (ASIN-INFO 탭의 제품만)
+function buildProductDropdown() {
+  var sel = document.getElementById('productSelect');
+  sel.innerHTML = '';
+  STATE.knownAsins.forEach(function(asin){
+    var o = document.createElement('option');
+    o.value = asin;
+    o.textContent = productName(asin);
+    sel.appendChild(o);
+  });
+  if (STATE.knownAsins.length > 0) {
+    STATE.selectedProduct = STATE.knownAsins[0];
+    sel.value = STATE.selectedProduct;
+  }
+}
+
+function onDataError(msg) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+  var b = document.getElementById('error-banner');
+  b.textContent = '⚠ 데이터 로드 오류: ' + msg;
+  b.style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════
+//  FILTER
+// ═══════════════════════════════════════════════════════
+function buildFilterOptions() {
+  var years  = {}, months = {};
+  STATE.raw.forEach(function(r) {
+    var parts = r.date.split('-');
+    if (parts[0]) years[parts[0]]  = 1;
+    if (parts[1]) months[parts[1]] = 1;
+  });
+
+  var yearSel  = document.getElementById('filterYear');
+  var monthSel = document.getElementById('filterMonth');
+
+  Object.keys(years).sort().forEach(function(y) {
+    var o = document.createElement('option');
+    o.value = y; o.textContent = y + '년';
+    yearSel.appendChild(o);
+  });
+
+  var monthNames = ['','1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  Object.keys(months).sort().forEach(function(m) {
+    var o = document.createElement('option');
+    o.value = m; o.textContent = monthNames[parseInt(m,10)] || m + '월';
+    monthSel.appendChild(o);
+  });
+}
+
+function applyFilter() {
+  var y = STATE.filterYear;
+  var m = STATE.filterMonth;
+  var from = STATE.filterFrom;
+  var to   = STATE.filterTo;
+  var useRange = !!(from || to);
+
+  STATE.filtered = STATE.raw.filter(function(r) {
+    if (useRange) {
+      // 사용자 지정 날짜 범위 (YYYY-MM-DD 문자열 비교 OK)
+      if (from && r.date < from) return false;
+      if (to   && r.date > to)   return false;
+      return true;
+    }
+    var parts = r.date.split('-');
+    if (y && parts[0] !== y) return false;
+    if (m && parts[1] !== m) return false;
+    return true;
+  });
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════
+//  DATA HELPERS
+// ═══════════════════════════════════════════════════════
+function fmt$(n)  { return '$' + n.toLocaleString('en-US', {maximumFractionDigits:0}); }
+function fmtN(n)  { return n.toLocaleString('en-US', {maximumFractionDigits:0}); }
+function fmtPct(n){ return n.toFixed(2) + '%'; }
+
+function productName(asin) {
+  return STATE.productMap[asin] || asin;
+}
+function productColor(asin) {
+  return STATE.productColors[asin] || '#888';
+}
+function isKnownProduct(asin) {
+  if (!STATE.knownAsins || STATE.knownAsins.length === 0) return true; // fallback
+  return STATE.knownAsins.indexOf(asin) > -1;
+}
+
+// Aggregate rows by key (date / week / month)
+function rows() { return STATE.filtered; }
+
+function aggregate(rows, groupFn) {
+  var map = {};
+  rows.forEach(function(r) {
+    var k = groupFn(r);
+    if (!map[k]) map[k] = { key: k, sales: 0, units: 0, sessions: 0, pageViews: 0, cvrSum: 0, cvrCount: 0, orderItems: 0 };
+    map[k].sales    += r.sales;
+    map[k].units    += r.units;
+    map[k].sessions += r.sessions;
+    map[k].pageViews+= r.pageViews;
+    if (r.sessions > 50) { map[k].cvrSum += r.cvr; map[k].cvrCount++; }
+    map[k].orderItems += r.orderItems;
+  });
+  return Object.values(map).sort(function(a,b){ return a.key < b.key ? -1 : 1; });
+}
+
+function aggByAsin(rows) {
+  var map = {};
+  rows.forEach(function(r) {
+    var k = r.childAsin;
+    if (!isKnownProduct(k)) return; // ASIN-INFO에 없는 제품 제외
+    if (!map[k]) map[k] = { asin: k, sales: 0, units: 0, sessions: 0, pageViews: 0 };
+    map[k].sales    += r.sales;
+    map[k].units    += r.units;
+    map[k].sessions += r.sessions;
+    map[k].pageViews+= r.pageViews;
+  });
+  // CVR = units / sessions * 100
+  return Object.values(map).map(function(a) {
+    a.cvr = a.sessions > 0 ? a.units / a.sessions * 100 : 0;
+    return a;
+  }).sort(function(a,b){ return b.sales - a.sales; });
+}
+
+function groupKey(r, agg) {
+  if (agg === 'weekly')  return r.weekCode || r.week;
+  if (agg === 'monthly') return r.month;
+  return r.date;
+}
+
+// Weekly data for WoW (always by week regardless of global period)
+function buildWeeklyData() {
+  return aggregate(STATE.filtered, function(r){ return r.weekCode || r.week; });
+}
+
+// Compute WoW %
+function wowPct(curr, prev) {
+  if (!prev || prev === 0) return null;
+  return ((curr - prev) / prev * 100);
+}
+
+// Session share by product over time (weekly)
+function buildSessionShare() {
+  var weeks = {};
+  STATE.filtered.forEach(function(r) {
+    var w = r.weekCode || r.week;
+    if (!weeks[w]) weeks[w] = {};
+    if (!weeks[w][r.childAsin]) weeks[w][r.childAsin] = 0;
+    weeks[w][r.childAsin] += r.sessions;
+  });
+  var sortedWeeks = Object.keys(weeks).sort();
+  var asins = Object.keys(
+    STATE.filtered.reduce(function(m,r){ m[r.childAsin]=1; return m; }, {})
+  );
+  return { weeks: sortedWeeks, asins: asins, map: weeks };
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER ALL
+// ═══════════════════════════════════════════════════════
+function renderAll() {
+  renderKpis();
+  renderRevenue();
+  renderSessions();
+  renderProductTrend();
+  renderUnits();
+  renderWow();
+  renderFunnel();
+  renderCvr();
+  renderProductCompare();
+  renderProductCvr();
+  renderSessionShare();
+  buildWowTable();
+}
+
+// ── KPI cards ─────────────────────────────────────────
+function renderKpis() {
+  var rows = STATE.filtered;
+  var totalRevenue = rows.reduce(function(s,r){ return s+r.sales; }, 0);
+  var totalUnits   = rows.reduce(function(s,r){ return s+r.units; }, 0);
+  var totalUnitsB2B= rows.reduce(function(s,r){ return s+r.unitsB2B; }, 0);
+  var totalSessions= rows.reduce(function(s,r){ return s+r.sessions; }, 0);
+  var totalPv      = rows.reduce(function(s,r){ return s+r.pageViews; }, 0);
+  var totalItems   = rows.reduce(function(s,r){ return s+r.orderItems; }, 0);
+  // CVR = 전체 units / 전체 sessions * 100
+  var avgCvr = totalSessions > 0 ? totalUnits / totalSessions * 100 : 0;
+
+  document.getElementById('kpiRevenue').textContent = fmt$(totalRevenue);
+  document.getElementById('kpiRevenueUnits').textContent =
+    fmtN(totalItems) + ' 건 주문';
+  document.getElementById('kpiUnits').textContent = fmtN(totalUnits);
+  document.getElementById('kpiUnitsB2B').textContent =
+    'B2B: ' + fmtN(totalUnitsB2B) + ' units';
+  document.getElementById('kpiCvr').textContent = fmtPct(avgCvr);
+  document.getElementById('kpiSessions').textContent = fmtN(totalSessions);
+  document.getElementById('kpiPv').textContent =
+    'Page Views: ' + fmtN(totalPv);
+}
+
+// ── Revenue trend ─────────────────────────────────────
+function renderRevenue() {
+  var agg = STATE.chartAgg.revenue;
+  var data = aggregate(STATE.filtered, function(r){ return groupKey(r, agg); });
+
+  var labels = data.map(function(d){ return d.key; });
+  var values = data.map(function(d){ return d.sales; });
+
+  makeLineChart('chartRevenue', labels, [{
+    label: '매출 ($)',
+    data: values,
+    borderColor: '#6c8ef7',
+    backgroundColor: 'rgba(108,142,247,0.08)',
+    fill: true,
+    tension: 0.3,
+    pointRadius: agg === 'daily' ? 2 : 5,
+    pointHoverRadius: 6
+  }], function(v){ return fmt$(v); });
+}
+
+// ── Sessions trend ────────────────────────────────────
+function renderSessions() {
+  var agg = STATE.chartAgg.sessions;
+  var data = aggregate(STATE.filtered, function(r){ return groupKey(r, agg); });
+
+  var labels = data.map(function(d){ return d.key; });
+  var values = data.map(function(d){ return d.sessions; });
+
+  makeLineChart('chartSessions', labels, [{
+    label: '세션',
+    data: values,
+    borderColor: '#10b981',
+    backgroundColor: 'rgba(16,185,129,0.08)',
+    fill: true,
+    tension: 0.3,
+    pointRadius: agg === 'daily' ? 2 : 5,
+    pointHoverRadius: 6
+  }], function(v){ return fmtN(v); });
+}
+
+// ── Product-specific Session + CVR trend ─────────────
+function renderProductTrend() {
+  var asin = STATE.selectedProduct;
+  if (!asin || !isKnownProduct(asin)) {
+    // 기본값: ASIN-INFO 첫 번째 제품
+    asin = STATE.knownAsins[0];
+    STATE.selectedProduct = asin;
+  }
+  var agg = STATE.chartAgg.productTrend;
+
+  // 선택 제품 rows만 필터
+  var rows = STATE.filtered.filter(function(r){ return r.childAsin === asin; });
+
+  // 기간별 집계 (sessions, units → CVR 계산)
+  var map = {};
+  rows.forEach(function(r){
+    var k = groupKey(r, agg);
+    if (!map[k]) map[k] = { key: k, sessions: 0, units: 0 };
+    map[k].sessions += r.sessions;
+    map[k].units    += r.units;
+  });
+  var data = Object.values(map).sort(function(a,b){ return a.key < b.key ? -1 : 1; });
+
+  var labels  = data.map(function(d){ return d.key; });
+  var sessions= data.map(function(d){ return d.sessions; });
+  var cvrs    = data.map(function(d){ return d.sessions > 0 ? +(d.units / d.sessions * 100).toFixed(2) : 0; });
+
+  var color = productColor(asin);
+
+  if (STATE.charts.chartProductTrend) STATE.charts.chartProductTrend.destroy();
+  var ctx = document.getElementById('chartProductTrend').getContext('2d');
+
+  STATE.charts.chartProductTrend = new Chart(ctx, {
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: '세션',
+          data: sessions,
+          backgroundColor: color + '55',
+          borderColor: color,
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'y1',
+          order: 2
+        },
+        {
+          type: 'line',
+          label: '전환율 (CVR %)',
+          data: cvrs,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245,158,11,0.15)',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: agg === 'daily' ? 2 : 5,
+          pointHoverRadius: 6,
+          fill: false,
+          yAxisID: 'y2',
+          order: 1
+        }
+      ]
+    },
+    options: chartDefaults({
+      scales: {
+        x: xAxisStyle(),
+        y1: Object.assign(yAxisStyle(), {
+          position: 'left',
+          ticks: { callback: function(v){ return fmtN(v); }, color: '#8b9ab2' },
+          title: { display: true, text: '세션', color: '#8b9ab2', font:{size:10} }
+        }),
+        y2: Object.assign(yAxisStyle(), {
+          position: 'right',
+          grid: { display: false },
+          ticks: { callback: function(v){ return v + '%'; }, color: '#f59e0b' },
+          title: { display: true, text: 'CVR (%)', color: '#f59e0b', font:{size:10} }
+        })
+      },
+      plugins: {
+        legend: legendStyle(),
+        tooltip: { callbacks: { label: function(ctx){
+          if (ctx.dataset.yAxisID === 'y2') return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(2) + '%';
+          return ctx.dataset.label + ': ' + fmtN(ctx.parsed.y);
+        }}}
+      }
+    })
+  });
+}
+
+// ── Units trend ───────────────────────────────────────
+function renderUnits() {
+  var agg = STATE.chartAgg.units;
+  var data = aggregate(STATE.filtered, function(r){ return groupKey(r, agg); });
+
+  var labels = data.map(function(d){ return d.key; });
+  var values = data.map(function(d){ return d.units; });
+
+  makeBarChart('chartUnits', labels, [{
+    label: 'Units Ordered',
+    data: values,
+    backgroundColor: 'rgba(16,185,129,0.7)',
+    borderColor: '#10b981',
+    borderWidth: 1,
+    borderRadius: 4
+  }], function(v){ return fmtN(v); });
+}
+
+// ── WoW chart ─────────────────────────────────────────
+function renderWow() {
+  var weekly = buildWeeklyData();
+  var labels = [], values = [], colors = [];
+
+  for (var i = 1; i < weekly.length; i++) {
+    var pct = wowPct(weekly[i].sales, weekly[i-1].sales);
+    if (pct === null) continue;
+    labels.push(weekly[i].key);
+    values.push(+pct.toFixed(1));
+    colors.push(pct >= 0 ? 'rgba(16,185,129,0.75)' : 'rgba(239,68,68,0.75)');
+  }
+
+  makeBarChart('chartWow', labels, [{
+    label: 'WoW 성장률 (%)',
+    data: values,
+    backgroundColor: colors,
+    borderRadius: 4,
+    borderWidth: 0
+  }], function(v){ return (v > 0 ? '+' : '') + v + '%'; });
+}
+
+// ── Funnel ────────────────────────────────────────────
+function renderFunnel() {
+  var byAsin = aggByAsin(STATE.filtered);
+  // Only show products with meaningful data
+  byAsin = byAsin.filter(function(a){ return a.sales > 0 || a.units > 0; });
+  var maxSess = Math.max.apply(null, byAsin.map(function(a){ return a.sessions; })) || 1;
+
+  var wrap = document.getElementById('funnelWrap');
+  wrap.innerHTML = '';
+
+  var maxConv = Math.max.apply(null, byAsin.map(function(a){ return a.cvr; })) || 1;
+
+  byAsin.forEach(function(a) {
+    var barWidthSess = a.sessions / maxSess * 100;
+    var barWidthUnit = a.sessions > 0 ? Math.min(100, a.units / a.sessions * 1000) : 0;
+    var barWidthConv = maxConv > 0 ? a.cvr / maxConv * 100 : 0;
+    var color = productColor(a.asin);
+    var name  = productName(a.asin);
+
+    wrap.innerHTML += '<div class="funnel-row" style="margin-bottom:14px">' +
+      '<div style="font-size:12px;font-weight:600;color:' + color + ';margin-bottom:6px">' + name + '</div>' +
+      funnelBar('Sessions',   fmtN(a.sessions),           color, barWidthSess) +
+      funnelBar('Units',      fmtN(a.units),               color, barWidthUnit) +
+      funnelBar('Conversion', fmtPct(a.cvr),                color, barWidthConv) +
+    '</div>';
+  });
+}
+
+function funnelBar(label, val, color, pct) {
+  return '<div class="funnel-row">' +
+    '<div class="funnel-label"><span>' + label + '</span><span>' + val + '</span></div>' +
+    '<div class="funnel-bar-bg"><div class="funnel-bar" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+  '</div>';
+}
+
+// ── CVR trend ─────────────────────────────────────────
+function renderCvr() {
+  var agg  = STATE.chartAgg.cvr;
+
+  // ASIN-INFO 탭 제품 중 세션/매출 있는 것 전부 포함
+  var byAsin = aggByAsin(STATE.filtered)
+    .filter(function(a){ return a.sessions > 0 || a.sales > 0; });
+  var asins = byAsin.map(function(a){ return a.asin; });
+
+  var allKeys = {};
+  STATE.filtered.forEach(function(r){
+    if (isKnownProduct(r.childAsin)) allKeys[groupKey(r,agg)] = 1;
+  });
+  var labels = Object.keys(allKeys).sort();
+
+  var datasets = asins.map(function(asin) {
+    // 기간별로 sessions / units 집계 후 CVR = units/sessions*100
+    var rowsByKey = {};
+    STATE.filtered.filter(function(r){ return r.childAsin === asin; })
+      .forEach(function(r){
+        var k = groupKey(r, agg);
+        if (!rowsByKey[k]) rowsByKey[k] = { sessions: 0, units: 0 };
+        rowsByKey[k].sessions += r.sessions;
+        rowsByKey[k].units    += r.units;
+      });
+
+    var vals = labels.map(function(l){
+      var d = rowsByKey[l];
+      if (!d || d.sessions === 0) return null;
+      return +(d.units / d.sessions * 100).toFixed(2);
+    });
+
+    return {
+      label: productName(asin),
+      data: vals,
+      borderColor: productColor(asin),
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      tension: 0.3,
+      pointRadius: 2,
+      spanGaps: true
+    };
+  });
+
+  makeLineChart('chartCvr', labels, datasets, function(v){ return fmtPct(v); });
+}
+
+// ── Product comparison ────────────────────────────────
+function renderProductCompare() {
+  var byAsin = aggByAsin(STATE.filtered).filter(function(a){ return a.sales > 0 || a.units > 0; });
+  var labels  = byAsin.map(function(a){ return productName(a.asin); });
+  var colors  = byAsin.map(function(a){ return productColor(a.asin); });
+
+  if (STATE.charts.productCompare) STATE.charts.productCompare.destroy();
+  var ctx = document.getElementById('chartProductCompare').getContext('2d');
+
+  STATE.charts.productCompare = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: '매출 ($)',
+          data: byAsin.map(function(a){ return a.sales; }),
+          backgroundColor: colors.map(function(c){ return c + 'bb'; }),
+          borderColor: colors,
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'y1'
+        },
+        {
+          label: '세션',
+          data: byAsin.map(function(a){ return a.sessions; }),
+          backgroundColor: 'rgba(139,154,178,0.3)',
+          borderColor: '#8b9ab2',
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'y2'
+        }
+      ]
+    },
+    options: chartDefaults({
+      scales: {
+        x: xAxisStyle(),
+        y1: { ...yAxisStyle(), position: 'left',  ticks: { callback: function(v){ return fmt$(v); }, color: '#8b9ab2' } },
+        y2: { ...yAxisStyle(), position: 'right', grid: { display: false }, ticks: { callback: function(v){ return fmtN(v); }, color: '#8b9ab2' } }
+      },
+      plugins: { legend: legendStyle(), tooltip: { callbacks: { label: function(ctx){
+        return ctx.dataset.yAxisID === 'y1' ? fmt$(ctx.parsed.y) : fmtN(ctx.parsed.y);
+      }}} }
+    })
+  });
+}
+
+// ── Product CVR comparison ────────────────────────────
+function renderProductCvr() {
+  var byAsin = aggByAsin(STATE.filtered).filter(function(a){ return a.sessions > 0; });
+  byAsin.sort(function(a,b){ return b.cvr - a.cvr; });
+
+  var labels = byAsin.map(function(a){ return productName(a.asin); });
+  var values = byAsin.map(function(a){ return +a.cvr.toFixed(2); });
+  var colors = byAsin.map(function(a){ return productColor(a.asin); });
+
+  makeBarChart('chartProductCvr', labels, [{
+    label: '평균 CVR (%)',
+    data: values,
+    backgroundColor: colors.map(function(c){ return c + 'bb'; }),
+    borderColor: colors,
+    borderWidth: 1,
+    borderRadius: 6
+  }], function(v){ return fmtPct(v); }, true /* horizontal */);
+}
+
+// ── Session share (stacked area) ──────────────────────
+function renderSessionShare() {
+  var share = buildSessionShare();
+  var labels = share.weeks;
+
+  // Get top products by total sessions
+  var totals = {};
+  STATE.filtered.forEach(function(r){ totals[r.childAsin] = (totals[r.childAsin]||0) + r.sessions; });
+  var sortedAsins = Object.keys(totals).sort(function(a,b){ return totals[b]-totals[a]; }).slice(0,6);
+
+  var datasets = sortedAsins.map(function(asin) {
+    var vals = labels.map(function(w){
+      var weekData = share.map[w] || {};
+      var total = Object.values(weekData).reduce(function(s,v){ return s+v; },0) || 1;
+      return weekData[asin] ? +((weekData[asin]/total*100).toFixed(1)) : 0;
+    });
+    return {
+      label: productName(asin),
+      data: vals,
+      borderColor: productColor(asin),
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      fill: false,
+      tension: 0.3,
+      pointRadius: 3
+    };
+  });
+
+  makeLineChart('chartSessionShare', labels, datasets, function(v){ return v + '%'; });
+}
+
+// ── WoW table ─────────────────────────────────────────
+function buildWowTable() {
+  var weekly = buildWeeklyData();
+  var tbody = document.getElementById('wowTableBody');
+  tbody.innerHTML = '';
+
+  for (var i = 0; i < weekly.length; i++) {
+    var w = weekly[i];
+    var prev = weekly[i-1];
+    var wowSales = prev ? wowPct(w.sales, prev.sales) : null;
+    var wowUnits = prev ? wowPct(w.units, prev.units) : null;
+
+    var wowSalesHtml = wowSales !== null
+      ? '<span class="' + (wowSales>=0?'pos':'neg') + '">' +
+        (wowSales>=0?'▲':'▼') + Math.abs(wowSales).toFixed(1) + '%</span>'
+      : '<span style="color:var(--muted)">—</span>';
+    var wowUnitsHtml = wowUnits !== null
+      ? '<span class="' + (wowUnits>=0?'pos':'neg') + '">' +
+        (wowUnits>=0?'▲':'▼') + Math.abs(wowUnits).toFixed(1) + '%</span>'
+      : '<span style="color:var(--muted)">—</span>';
+
+    tbody.innerHTML +=
+      '<tr>' +
+      '<td>' + w.key + '</td>' +
+      '<td>' + fmt$(w.sales) + '</td>' +
+      '<td>' + wowSalesHtml + '</td>' +
+      '<td>' + fmtN(w.units) + '</td>' +
+      '<td>' + wowUnitsHtml + '</td>' +
+      '</tr>';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  CHART FACTORIES
+// ═══════════════════════════════════════════════════════
+function chartDefaults(overrides) {
+  return Object.assign({
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 400 },
+    plugins: { legend: legendStyle() }
+  }, overrides);
+}
+
+function legendStyle() {
+  return {
+    position: 'bottom',
+    labels: { color: '#8b9ab2', font: { size: 11 }, boxWidth: 12, padding: 12 }
+  };
+}
+function xAxisStyle() {
+  return { grid: { color: 'rgba(45,55,72,0.5)' }, ticks: { color: '#8b9ab2', maxRotation: 45, font: { size: 10 } } };
+}
+function yAxisStyle() {
+  return { grid: { color: 'rgba(45,55,72,0.5)' }, ticks: { color: '#8b9ab2', font: { size: 10 } } };
+}
+
+function makeLineChart(id, labels, datasets, tooltipFmt) {
+  if (STATE.charts[id]) STATE.charts[id].destroy();
+  var ctx = document.getElementById(id).getContext('2d');
+  STATE.charts[id] = new Chart(ctx, {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: chartDefaults({
+      scales: {
+        x: xAxisStyle(),
+        y: Object.assign(yAxisStyle(), { ticks: { callback: tooltipFmt, color: '#8b9ab2' } })
+      },
+      plugins: {
+        legend: legendStyle(),
+        tooltip: { callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + tooltipFmt(ctx.parsed.y); } } }
+      }
+    })
+  });
+}
+
+function makeBarChart(id, labels, datasets, tooltipFmt, horizontal) {
+  if (STATE.charts[id]) STATE.charts[id].destroy();
+  var ctx = document.getElementById(id).getContext('2d');
+
+  // 가로 차트: X축=값(포맷 적용), Y축=라벨(제품명, 포맷 없음)
+  // 세로 차트: Y축=값(포맷 적용), X축=라벨
+  var scaleX = horizontal
+    ? Object.assign(xAxisStyle(), { ticks: { callback: tooltipFmt, color: '#8b9ab2' } })
+    : xAxisStyle();
+  var scaleY = horizontal
+    ? Object.assign(yAxisStyle(), { ticks: { color: '#8b9ab2', font: { size: 11 } } })
+    : Object.assign(yAxisStyle(), { ticks: { callback: tooltipFmt, color: '#8b9ab2' } });
+
+  STATE.charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: labels, datasets: datasets },
+    options: chartDefaults({
+      indexAxis: horizontal ? 'y' : 'x',
+      scales: { x: scaleX, y: scaleY },
+      plugins: {
+        legend: legendStyle(),
+        tooltip: { callbacks: { label: function(ctx){
+          var val = horizontal ? ctx.parsed.x : ctx.parsed.y;
+          return ctx.dataset.label + ': ' + tooltipFmt(val);
+        }}}
+      }
+    })
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  CONTROLS
+// ═══════════════════════════════════════════════════════
+function bindControls() {
+  // 연도/월 드롭다운
+  document.getElementById('filterYear').addEventListener('change', function() {
+    STATE.filterYear = this.value;
+    applyFilter();
+  });
+  document.getElementById('filterMonth').addEventListener('change', function() {
+    STATE.filterMonth = this.value;
+    applyFilter();
+  });
+  document.getElementById('filterFrom').addEventListener('change', function() {
+    STATE.filterFrom = this.value;
+    applyFilter();
+  });
+  document.getElementById('filterTo').addEventListener('change', function() {
+    STATE.filterTo = this.value;
+    applyFilter();
+  });
+  document.getElementById('filterReset').addEventListener('click', function() {
+    STATE.filterYear  = '';
+    STATE.filterMonth = '';
+    STATE.filterFrom  = '';
+    STATE.filterTo    = '';
+    document.getElementById('filterYear').value  = '';
+    document.getElementById('filterMonth').value = '';
+    document.getElementById('filterFrom').value  = '';
+    document.getElementById('filterTo').value    = '';
+    applyFilter();
+  });
+
+  // Toggle buttons inside cards
+  document.querySelectorAll('.toggle-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var chartKey = this.dataset.chart;
+      var agg = this.dataset.agg;
+      var group = document.querySelectorAll('.toggle-btn[data-chart="' + chartKey + '"]');
+      group.forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      STATE.chartAgg[chartKey] = agg;
+      if (chartKey === 'revenue')       renderRevenue();
+      if (chartKey === 'sessions')      renderSessions();
+      if (chartKey === 'units')         renderUnits();
+      if (chartKey === 'cvr')           renderCvr();
+      if (chartKey === 'productTrend')  renderProductTrend();
+    });
+  });
+
+  // 제품 드롭다운
+  var prodSel = document.getElementById('productSelect');
+  if (prodSel) {
+    prodSel.addEventListener('change', function(){
+      STATE.selectedProduct = this.value;
+      renderProductTrend();
+    });
+  }
+}
+</script>
+</body>
+</html>
