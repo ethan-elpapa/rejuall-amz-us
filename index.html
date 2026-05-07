@@ -670,7 +670,7 @@
   <div id="sec-compare" class="section-header">제품별 성과 비교</div>
   <div class="grid-3" style="margin-bottom:20px">
     <div class="card span-2">
-      <div class="card-title">제품별 매출 &amp; 세션 비교</div>
+      <div class="card-title">제품별 매출 비중</div>
       <div class="chart-wrap" style="height:260px">
         <canvas id="chartProductCompare"></canvas>
       </div>
@@ -1536,48 +1536,48 @@ function renderCvr() {
 
 // ── Product comparison ────────────────────────────────
 function renderProductCompare() {
-  var byAsin = aggByAsin(STATE.filtered).filter(function(a){ return a.sales > 0 || a.units > 0; });
-  var labels  = byAsin.map(function(a){ return productName(a.asin); });
-  var colors  = byAsin.map(function(a){ return productColor(a.asin); });
+  var byAsin = aggByAsin(STATE.filtered).filter(function(a){ return a.sales > 0; });
+  byAsin.sort(function(a,b){ return b.sales - a.sales; });
+  var labels = byAsin.map(function(a){ return productName(a.asin); });
+  var values = byAsin.map(function(a){ return a.sales; });
+  var colors = byAsin.map(function(a){ return productColor(a.asin); });
+  var total  = values.reduce(function(s,v){ return s + v; }, 0) || 1;
 
   if (STATE.charts.productCompare) STATE.charts.productCompare.destroy();
   var ctx = document.getElementById('chartProductCompare').getContext('2d');
 
   STATE.charts.productCompare = new Chart(ctx, {
-    type: 'bar',
+    type: 'doughnut',
     data: {
       labels: labels,
-      datasets: [
-        {
-          label: '매출 ($)',
-          data: byAsin.map(function(a){ return a.sales; }),
-          backgroundColor: colors.map(function(c){ return c + 'bb'; }),
-          borderColor: colors,
-          borderWidth: 1,
-          borderRadius: 4,
-          yAxisID: 'y1'
-        },
-        {
-          label: '세션',
-          data: byAsin.map(function(a){ return a.sessions; }),
-          backgroundColor: 'rgba(139,154,178,0.3)',
-          borderColor: '#8b9ab2',
-          borderWidth: 1,
-          borderRadius: 4,
-          yAxisID: 'y2'
-        }
-      ]
+      datasets: [{
+        data: values,
+        backgroundColor: colors.map(function(c){ return c + 'cc'; }),
+        borderColor: '#0f1626',
+        borderWidth: 2,
+        hoverOffset: 8
+      }]
     },
-    options: chartDefaults({
-      scales: {
-        x: xAxisStyle(),
-        y1: { ...yAxisStyle(), position: 'left',  ticks: { callback: function(v){ return fmt$(v); }, color: '#8b9ab2' } },
-        y2: { ...yAxisStyle(), position: 'right', grid: { display: false }, ticks: { callback: function(v){ return fmtN(v); }, color: '#8b9ab2' } }
-      },
-      plugins: { legend: legendStyle(), tooltip: { callbacks: { label: function(ctx){
-        return ctx.dataset.yAxisID === 'y1' ? fmt$(ctx.parsed.y) : fmtN(ctx.parsed.y);
-      }}} }
-    })
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '55%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { color: '#cbd5e1', boxWidth: 12, padding: 10, font: { size: 11 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              var v = ctx.parsed;
+              var pct = (v / total * 100).toFixed(1);
+              return ctx.label + ': ' + fmt$(v) + ' (' + pct + '%)';
+            }
+          }
+        }
+      }
+    }
   });
 }
 
