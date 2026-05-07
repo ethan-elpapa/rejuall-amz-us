@@ -635,25 +635,34 @@
     </div>
   </div>
 
-  <!-- ④ 트래픽 & 전환 퍼널 -->
-  <div id="sec-funnel" class="section-header">트래픽 &amp; 전환 퍼널 (제품별)</div>
+  <!-- ④ 트래픽 & 전환 -->
+  <div id="sec-funnel" class="section-header">트래픽 &amp; 전환 (제품별)</div>
   <div class="grid-2" style="margin-bottom:20px">
     <div class="card">
-      <div class="card-title">제품별 Sessions → Units → Conversion</div>
-      <div class="funnel-wrap" id="funnelWrap" style="margin-top:10px"></div>
+      <div class="card-title">제품별 Sessions 비교</div>
+      <div class="chart-wrap" style="height:260px">
+        <canvas id="chartProductSessions"></canvas>
+      </div>
     </div>
 
     <div class="card">
-      <div id="sec-cvr" class="card-title">
-        전환율 (CVR) 트렌드
-        <div class="toggle-row" style="margin:0">
-          <button class="toggle-btn active" data-chart="cvr" data-agg="daily">일별</button>
-          <button class="toggle-btn" data-chart="cvr" data-agg="weekly">주별</button>
-        </div>
+      <div class="card-title">제품별 Units 비교</div>
+      <div class="chart-wrap" style="height:260px">
+        <canvas id="chartProductUnits"></canvas>
       </div>
-      <div class="chart-wrap" style="height:220px">
-        <canvas id="chartCvr"></canvas>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div id="sec-cvr" class="card-title">
+      전환율 (CVR) 트렌드
+      <div class="toggle-row" style="margin:0">
+        <button class="toggle-btn active" data-chart="cvr" data-agg="daily">일별</button>
+        <button class="toggle-btn" data-chart="cvr" data-agg="weekly">주별</button>
       </div>
+    </div>
+    <div class="chart-wrap" style="height:220px">
+      <canvas id="chartCvr"></canvas>
     </div>
   </div>
 
@@ -1017,7 +1026,8 @@ function renderAll() {
   renderSessions();
   renderProductSales();
   renderProductTrend();
-  renderFunnel();
+  renderProductSessions();
+  renderProductUnits();
   renderCvr();
   renderProductCompare();
   renderProductCvr();
@@ -1439,38 +1449,42 @@ function renderWow() {
 }
 
 // ── Funnel ────────────────────────────────────────────
-function renderFunnel() {
-  var byAsin = aggByAsin(STATE.filtered);
-  // Only show products with meaningful data
-  byAsin = byAsin.filter(function(a){ return a.sales > 0 || a.units > 0; });
-  var maxSess = Math.max.apply(null, byAsin.map(function(a){ return a.sessions; })) || 1;
+// ── Product Sessions comparison ───────────────────────
+function renderProductSessions() {
+  var byAsin = aggByAsin(STATE.filtered).filter(function(a){ return a.sessions > 0; });
+  byAsin.sort(function(a,b){ return b.sessions - a.sessions; });
 
-  var wrap = document.getElementById('funnelWrap');
-  wrap.innerHTML = '';
+  var labels = byAsin.map(function(a){ return productName(a.asin); });
+  var values = byAsin.map(function(a){ return a.sessions; });
+  var colors = byAsin.map(function(a){ return productColor(a.asin); });
 
-  var maxConv = Math.max.apply(null, byAsin.map(function(a){ return a.cvr; })) || 1;
-
-  byAsin.forEach(function(a) {
-    var barWidthSess = a.sessions / maxSess * 100;
-    var barWidthUnit = a.sessions > 0 ? Math.min(100, a.units / a.sessions * 1000) : 0;
-    var barWidthConv = maxConv > 0 ? a.cvr / maxConv * 100 : 0;
-    var color = productColor(a.asin);
-    var name  = productName(a.asin);
-
-    wrap.innerHTML += '<div class="funnel-row" style="margin-bottom:14px">' +
-      '<div style="font-size:12px;font-weight:600;color:' + color + ';margin-bottom:6px">' + name + '</div>' +
-      funnelBar('Sessions',   fmtN(a.sessions),           color, barWidthSess) +
-      funnelBar('Units',      fmtN(a.units),               color, barWidthUnit) +
-      funnelBar('Conversion', fmtPct(a.cvr),                color, barWidthConv) +
-    '</div>';
-  });
+  makeBarChart('chartProductSessions', labels, [{
+    label: 'Sessions',
+    data: values,
+    backgroundColor: colors.map(function(c){ return c + 'bb'; }),
+    borderColor: colors,
+    borderWidth: 1,
+    borderRadius: 6
+  }], function(v){ return fmtN(v); }, true /* horizontal */);
 }
 
-function funnelBar(label, val, color, pct) {
-  return '<div class="funnel-row">' +
-    '<div class="funnel-label"><span>' + label + '</span><span>' + val + '</span></div>' +
-    '<div class="funnel-bar-bg"><div class="funnel-bar" style="width:' + pct + '%;background:' + color + '"></div></div>' +
-  '</div>';
+// ── Product Units comparison ──────────────────────────
+function renderProductUnits() {
+  var byAsin = aggByAsin(STATE.filtered).filter(function(a){ return a.units > 0; });
+  byAsin.sort(function(a,b){ return b.units - a.units; });
+
+  var labels = byAsin.map(function(a){ return productName(a.asin); });
+  var values = byAsin.map(function(a){ return a.units; });
+  var colors = byAsin.map(function(a){ return productColor(a.asin); });
+
+  makeBarChart('chartProductUnits', labels, [{
+    label: 'Units',
+    data: values,
+    backgroundColor: colors.map(function(c){ return c + 'bb'; }),
+    borderColor: colors,
+    borderWidth: 1,
+    borderRadius: 6
+  }], function(v){ return fmtN(v); }, true /* horizontal */);
 }
 
 // ── CVR trend ─────────────────────────────────────────
