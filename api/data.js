@@ -34,6 +34,7 @@ const PRODUCT_COLORS = {
 function normalizeHeader(s) {
   return String(s || '').toLowerCase()
     .replace(/[()[\]{}]/g, '')
+    .replace(/[\u2010-\u2015\u2212]/g, '-')   // em/en/figure dashes → hyphen
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -104,26 +105,44 @@ async function getSheetMeta(sheets) {
 }
 
 function pickRawSheet(allSheets, allValues) {
-  // Date + Sessions - Total + Child ASIN 헤더가 모두 있는 시트 중 행이 가장 많은 것
+  // Date + Sessions + Child ASIN 헤더가 모두 있는 시트 중 행이 가장 많은 것
   let best = null;
   for (const sh of allSheets) {
     const vals = allValues[sh.title];
     if (!vals || vals.length < 2) continue;
-    const header = vals[0].map(h => String(h).toLowerCase());
-    const hasDate = header.some(h => h === 'date');
-    const hasSessions = header.some(h => h.indexOf('sessions - total') > -1);
-    const hasChild = header.some(h => h.indexOf('child asin') > -1);
+    const header = (vals[0] || []).map(h => normalizeHeader(h));
+    const hasDate     = header.some(h => h === 'date' || h === '날짜');
+    const hasSessions = header.some(h => h.indexOf('session') > -1);
+    const hasChild    = header.some(h => h.indexOf('child asin') > -1 || h.indexOf('child') > -1 && h.indexOf('asin') > -1);
     if (hasDate && hasSessions && hasChild) {
       if (!best || vals.length > allValues[best.title].length) best = sh;
+    }
+  }
+  // 폴백: 가장 행 많은 시트 중 child asin이 있는 것
+  if (!best) {
+    for (const sh of allSheets) {
+      const vals = allValues[sh.title];
+      if (!vals || vals.length < 2) continue;
+      const header = (vals[0] || []).map(h => normalizeHeader(h));
+      if (header.some(h => h.indexOf('child') > -1 && h.indexOf('asin') > -1)) {
+        if (!best || vals.length > allValues[best.title].length) best = sh;
+      }
     }
   }
   return best;
 }
 
 function pickGoalSheet(allSheets) {
+  // 1순위: 정확히 '목표 매출' 또는 '목표' 포함 (target/goal는 너무 광범위해서 후순위)
   for (const sh of allSheets) {
     const name = sh.title.replace(/\s/g, '');
-    if (name.indexOf('목표') > -1 || name.toLowerCase().indexOf('goal') > -1 || name.toLowerCase().indexOf('target') > -1) {
+    if (name.indexOf('목표') > -1) return sh;
+  }
+  // 2순위: 영문 키워드 — 단, 'targeting' 같이 다른 의미는 제외
+  for (const sh of allSheets) {
+    const lower = sh.title.toLowerCase();
+    if (lower.indexOf('targeting') > -1) continue; // 광고 타겟팅 리포트 제외
+    if (/(^|[\s_-])goal($|[\s_-])/.test(lower) || /(^|[\s_-])target($|[\s_-])/.test(lower) || lower.indexOf('monthly goal') > -1) {
       return sh;
     }
   }
@@ -323,7 +342,12 @@ module.exports = async (req, res) => {
         rawSheet: rawSheet ? rawSheet.title : null,
         rowCount: rows.length,
         goalSheet: goalSheet ? goalSheet.title : null,
-        goalKeys: Object.keys(monthlyGoals).length
+        goalKeys: Object.keys(monthlyGoals).length,
+        allSheets: sheetProps.map(s => ({
+          title: s.title,
+          rows: s.gridProperties && s.gridProperties.rowCount,
+          headers: ((allValues[s.title] || [])[0] || []).slice(0, 25)
+        }))
       }
     };
 
