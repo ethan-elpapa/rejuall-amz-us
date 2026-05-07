@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+.env
+.env.local
+.env.*.local
+.vercel
+*.log
+# 서비스 계정 JSON 키 — 절대 커밋 금지
+*service-account*.json
+*-credentials.json
+gcp-key*.json
