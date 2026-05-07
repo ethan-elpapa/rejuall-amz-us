@@ -589,6 +589,23 @@
     </div>
   </div>
 
+  <!-- 주차별 WoW 상세 테이블 (Overview 하단) -->
+  <div class="card" style="margin-bottom:30px">
+    <div class="card-title">주차별 WoW 상세 테이블</div>
+    <table class="wow-table" id="wowTable">
+      <thead>
+        <tr>
+          <th>주차</th>
+          <th>매출 ($)</th>
+          <th>WoW</th>
+          <th>Units</th>
+          <th>WoW</th>
+        </tr>
+      </thead>
+      <tbody id="wowTableBody"></tbody>
+    </table>
+  </div>
+
   </div><!-- /view-overview -->
 
   <!-- ════════════ 제품별 대시보드 뷰 ════════════ -->
@@ -684,29 +701,11 @@
     </div>
   </div>
 
-  <!-- ⑥ WoW 테이블 + 신제품 트래픽 -->
-  <div class="grid-2" style="margin-bottom:30px">
-    <div class="card">
-      <div class="card-title">주차별 WoW 상세 테이블</div>
-      <table class="wow-table" id="wowTable">
-        <thead>
-          <tr>
-            <th>주차</th>
-            <th>매출 ($)</th>
-            <th>WoW</th>
-            <th>Units</th>
-            <th>WoW</th>
-          </tr>
-        </thead>
-        <tbody id="wowTableBody"></tbody>
-      </table>
-    </div>
-
-    <div id="sec-share" class="card">
-      <div class="card-title">신제품 트래픽 비중 추이 (세션 기준)</div>
-      <div class="chart-wrap" style="height:280px">
-        <canvas id="chartSessionShare"></canvas>
-      </div>
+  <!-- ⑥ 신제품 트래픽 -->
+  <div id="sec-share" class="card" style="margin-bottom:30px">
+    <div class="card-title">신제품 트래픽 비중 추이 (세션 기준)</div>
+    <div class="chart-wrap" style="height:280px">
+      <canvas id="chartSessionShare"></canvas>
     </div>
   </div>
   </div><!-- /view-product -->
