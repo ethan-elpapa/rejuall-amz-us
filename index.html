@@ -260,6 +260,66 @@
     font-size: 12px;
     color: var(--muted);
   }
+
+  /* Calendar */
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .cal-head {
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: center;
+    padding: 4px 0;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .cal-head.sun { color: #f87171; }
+  .cal-head.sat { color: #60a5fa; }
+  .cal-cell {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 8px;
+    min-height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: background 0.15s;
+  }
+  .cal-cell.empty {
+    background: transparent;
+    border: none;
+  }
+  .cal-cell.has-data:hover {
+    background: rgba(167,139,250,0.12);
+    border-color: rgba(167,139,250,0.4);
+  }
+  .cal-cell.today {
+    border-color: #a78bfa;
+    box-shadow: 0 0 0 1px #a78bfa inset;
+  }
+  .cal-date {
+    font-size: 12px;
+    font-weight: 600;
+    color: #cbd5e1;
+  }
+  .cal-date.sun { color: #f87171; }
+  .cal-date.sat { color: #60a5fa; }
+  .cal-val {
+    font-size: 12px;
+    font-weight: 700;
+    color: #60a5fa;
+    text-align: right;
+    line-height: 1.2;
+  }
+  .cal-val-sub {
+    font-size: 10px;
+    color: #94a3b8;
+    text-align: right;
+  }
   .badge {
     display: inline-flex;
     align-items: center;
@@ -519,6 +579,12 @@
       <div class="kpi-value pink" id="kpiSessions">—</div>
       <div class="kpi-sub" id="kpiPv"></div>
     </div>
+  </div>
+
+  <!-- ①-2 월별 캘린더 -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title" id="calTitle">월별 캘린더</div>
+    <div class="cal-grid" id="calGrid"></div>
   </div>
 
   <!-- ② 매출 트렌드 -->
@@ -1019,6 +1085,7 @@ function buildSessionShare() {
 function renderAll() {
   renderGoalBanner();
   renderKpis();
+  renderCalendar();
   renderRevenue();
   renderUnitsTrend();
   renderCvrTrend();
@@ -1146,6 +1213,70 @@ function renderKpis() {
   document.getElementById('kpiSessions').textContent = fmtN(totalSessions);
   document.getElementById('kpiPv').textContent =
     'Page Views: ' + fmtN(totalPv);
+}
+
+// ── Monthly Calendar ──────────────────────────────────
+function renderCalendar() {
+  var grid = document.getElementById('calGrid');
+  var title = document.getElementById('calTitle');
+  if (!grid) return;
+
+  // 선택된 월 결정 — 필터 월이 없으면 오늘 월
+  var now = new Date();
+  var year  = parseInt(STATE.filterYear, 10)  || now.getFullYear();
+  var month = parseInt(STATE.filterMonth, 10) || (now.getMonth() + 1);
+
+  if (title) title.textContent = year + '년 ' + month + '월 캘린더';
+
+  // 해당 월 일별 매출/판매 합산
+  var byDay = {};
+  STATE.filtered.forEach(function(r){
+    var d = r.date; // YYYY-MM-DD
+    if (!d) return;
+    var p = d.split('-');
+    if (parseInt(p[0],10) !== year || parseInt(p[1],10) !== month) return;
+    var day = parseInt(p[2], 10);
+    if (!byDay[day]) byDay[day] = { sales: 0, units: 0, sessions: 0 };
+    byDay[day].sales    += r.sales;
+    byDay[day].units    += r.units;
+    byDay[day].sessions += r.sessions;
+  });
+
+  var firstDow = new Date(year, month - 1, 1).getDay(); // 0=일요일
+  var daysInMonth = new Date(year, month, 0).getDate();
+  var todayY = now.getFullYear(), todayM = now.getMonth()+1, todayD = now.getDate();
+
+  var html = '';
+  var dows = ['일','월','화','수','목','금','토'];
+  dows.forEach(function(d, i){
+    var cls = i === 0 ? 'sun' : (i === 6 ? 'sat' : '');
+    html += '<div class="cal-head ' + cls + '">' + d + '</div>';
+  });
+
+  // 첫째 주 빈칸
+  for (var i = 0; i < firstDow; i++) {
+    html += '<div class="cal-cell empty"></div>';
+  }
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dow = (firstDow + d - 1) % 7;
+    var dowCls = dow === 0 ? 'sun' : (dow === 6 ? 'sat' : '');
+    var data = byDay[d];
+    var hasData = !!data;
+    var isToday = (year === todayY && month === todayM && d === todayD);
+    var classes = ['cal-cell'];
+    if (hasData) classes.push('has-data');
+    if (isToday) classes.push('today');
+    html += '<div class="' + classes.join(' ') + '">' +
+      '<div class="cal-date ' + dowCls + '">' + d + '</div>';
+    if (hasData) {
+      html += '<div>' +
+        '<div class="cal-val">' + fmt$(data.sales) + '</div>' +
+        '<div class="cal-val-sub">' + fmtN(data.units) + ' units</div>' +
+      '</div>';
+    }
+    html += '</div>';
+  }
+  grid.innerHTML = html;
 }
 
 // ── Revenue trend ─────────────────────────────────────
