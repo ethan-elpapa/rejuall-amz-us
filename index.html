@@ -301,6 +301,25 @@
     border-color: #a78bfa;
     box-shadow: 0 0 0 1px #a78bfa inset;
   }
+  .cal-cell.event {
+    background: linear-gradient(135deg, rgba(244,114,182,0.18), rgba(251,191,36,0.12));
+    border-color: rgba(244,114,182,0.5);
+  }
+  .cal-cell.event.today {
+    border-color: #f472b6;
+    box-shadow: 0 0 0 1px #f472b6 inset;
+  }
+  .cal-event-tag {
+    font-size: 9px;
+    font-weight: 700;
+    color: #f472b6;
+    background: rgba(244,114,182,0.18);
+    border-radius: 4px;
+    padding: 1px 5px;
+    display: inline-block;
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
   .cal-date {
     font-size: 12px;
     font-weight: 600;
@@ -1215,6 +1234,19 @@ function renderKpis() {
     'Page Views: ' + fmtN(totalPv);
 }
 
+// ── 캘린더 이벤트 (프로모션 기간 등) ───────────────────
+var CAL_EVENTS = [
+  { label: 'BD', name: 'Brand Day', start: '2026-04-22', end: '2026-04-28' }
+];
+
+function eventForDate(yyyymmdd) {
+  for (var i = 0; i < CAL_EVENTS.length; i++) {
+    var e = CAL_EVENTS[i];
+    if (yyyymmdd >= e.start && yyyymmdd <= e.end) return e;
+  }
+  return null;
+}
+
 // ── Monthly Calendar ──────────────────────────────────
 function renderCalendar() {
   var grid = document.getElementById('calGrid');
@@ -1263,11 +1295,17 @@ function renderCalendar() {
     var data = byDay[d];
     var hasData = !!data;
     var isToday = (year === todayY && month === todayM && d === todayD);
+    var dateStr = year + '-' + ('0'+month).slice(-2) + '-' + ('0'+d).slice(-2);
+    var ev = eventForDate(dateStr);
     var classes = ['cal-cell'];
     if (hasData) classes.push('has-data');
     if (isToday) classes.push('today');
-    html += '<div class="' + classes.join(' ') + '">' +
-      '<div class="cal-date ' + dowCls + '">' + d + '</div>';
+    if (ev) classes.push('event');
+    var titleAttr = ev ? ' title="' + ev.name + ' (' + ev.start + ' ~ ' + ev.end + ')"' : '';
+    html += '<div class="' + classes.join(' ') + '"' + titleAttr + '>' +
+      '<div class="cal-date ' + dowCls + '">' + d +
+        (ev ? ' <span class="cal-event-tag">' + ev.label + '</span>' : '') +
+      '</div>';
     if (hasData) {
       html += '<div>' +
         '<div class="cal-val">' + fmt$(data.sales) + '</div>' +
