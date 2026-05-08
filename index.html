@@ -1973,9 +1973,10 @@ function bindSidebar() {
   var links = document.querySelectorAll('.sidebar .nav-link');
   links.forEach(function(a){
     a.addEventListener('click', function(e){
-      e.preventDefault();
       var view = this.getAttribute('data-view');
+      // data-view 가 없으면 일반 링크 (예: /inventory) 로 정상 네비게이션 허용
       if (!view) return;
+      e.preventDefault();
       links.forEach(function(b){ b.classList.remove('active'); });
       this.classList.add('active');
 
