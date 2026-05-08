@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dr. Reju-All Amazon Dashboard</title>
+<!-- 재고 대시보드 미리 워밍업: 페이지 로드되자마자 iframe 데이터 prefetch → 메뉴 클릭 시 즉시 표시 -->
+<link rel="prefetch" href="/inventory/" as="document">
+<link rel="prefetch" href="/inventory/api/dashboard" as="fetch" crossorigin="anonymous">
+<script>
+  // CDN 캐시 워밍업 (60초 캐시되어 다음 요청은 즉시 응답)
+  if (typeof fetch !== 'undefined') {
+    fetch('/inventory/api/dashboard').catch(function(){});
+  }
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
@@ -830,7 +839,6 @@
       id="inventoryFrame"
       src="/inventory/"
       title="SCM 재고/물류 대시보드"
-      loading="lazy"
       scrolling="no"
       style="display:block;width:100%;height:800px;border:0;background:#f7f8fa;border-radius:8px"
       allow="clipboard-write">
