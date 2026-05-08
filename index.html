@@ -8,18 +8,25 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
   :root {
-    --bg:       #0d1117;
-    --surface:  #161b22;
-    --card:     #1c2230;
-    --border:   #2d3748;
-    --blue:     #6c8ef7;
+    --bg:       #f7f8fa;
+    --surface:  #ffffff;
+    --card:     #ffffff;
+    --border:   #e5e7eb;
+    --blue:     #2e75b6;
     --green:    #10b981;
     --red:      #ef4444;
     --yellow:   #f59e0b;
     --pink:     #ec4899;
-    --text:     #e2e8f0;
-    --muted:    #8b9ab2;
+    --text:     #1f2937;
+    --muted:    #6b7280;
     --radius:   12px;
+
+    /* 사이드바 전용 (다크 유지) */
+    --side-bg:    #161b22;
+    --side-text:  #e2e8f0;
+    --side-muted: #8b9ab2;
+    --side-border:#2d3748;
+    --side-blue:  #6c8ef7;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -114,8 +121,8 @@
   .layout { display: flex; }
   .sidebar {
     width: 200px;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
+    background: var(--side-bg);
+    border-right: 1px solid var(--side-border);
     min-height: calc(100vh - 60px);
     position: sticky;
     top: 60px;
@@ -125,7 +132,7 @@
   .nav-title {
     font-size: 11px;
     font-weight: 600;
-    color: var(--muted);
+    color: var(--side-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 0 20px 8px;
@@ -133,21 +140,21 @@
   .nav-link {
     display: block;
     padding: 9px 20px;
-    color: var(--text);
+    color: var(--side-text);
     text-decoration: none;
     font-size: 13px;
     border-left: 3px solid transparent;
     transition: all 0.15s;
   }
   .nav-link:hover {
-    background: rgba(108,142,247,0.08);
-    color: var(--blue);
-    border-left-color: var(--blue);
+    background: rgba(108,142,247,0.12);
+    color: var(--side-blue);
+    border-left-color: var(--side-blue);
   }
   .nav-link.active {
-    background: rgba(108,142,247,0.12);
-    color: var(--blue);
-    border-left-color: var(--blue);
+    background: rgba(108,142,247,0.18);
+    color: var(--side-blue);
+    border-left-color: var(--side-blue);
     font-weight: 600;
   }
   .main { padding: 20px 24px; max-width: 1500px; margin: 0 auto; flex: 1; min-width: 0; }
