@@ -697,6 +697,21 @@
   <div id="view-product" class="view-section" style="display:none">
   <div class="section-header" style="font-size:18px;margin-top:0">제품별 대시보드</div>
 
+  <!-- ① 제품별 판매 추세 (전 제품 동시) -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">
+      제품별 판매 추세
+      <div class="toggle-row" style="margin:0">
+        <button class="toggle-btn active" data-chart="productLines" data-agg="daily">일별</button>
+        <button class="toggle-btn" data-chart="productLines" data-agg="weekly">주별</button>
+        <button class="toggle-btn" data-chart="productLines" data-agg="monthly">월별</button>
+      </div>
+    </div>
+    <div class="chart-wrap" style="height:320px">
+      <canvas id="chartProductLines"></canvas>
+    </div>
+  </div>
+
   <!-- ②-3 제품별 판매량 -->
   <div id="sec-prodSales" class="grid-2" style="margin-bottom:20px">
     <div class="card span-2">
@@ -829,7 +844,7 @@ var STATE = {
   productColors: {},
   period: 'daily',
   charts: {},
-  chartAgg: { revenue: 'daily', sessions: 'daily', units: 'daily', cvr: 'daily', productTrend: 'daily', productSales: 'daily', unitsTrend: 'daily', cvrTrend: 'daily' },
+  chartAgg: { revenue: 'daily', sessions: 'daily', units: 'daily', cvr: 'daily', productTrend: 'daily', productSales: 'daily', unitsTrend: 'daily', cvrTrend: 'daily', productLines: 'daily' },
   filterYear: '',
   filterMonth: '',
   filterFrom: '',
@@ -1109,6 +1124,7 @@ function renderAll() {
   renderUnitsTrend();
   renderCvrTrend();
   renderSessions();
+  renderProductLines();
   renderProductSales();
   renderProductTrend();
   renderProductSessions();
@@ -1398,6 +1414,50 @@ function renderCvrTrend() {
 }
 
 // ── Product-specific Sales (Units bars + Sales $ line) ───
+// ── Product sales trend lines (all products) ──────────
+function renderProductLines() {
+  var agg = STATE.chartAgg.productLines || 'daily';
+
+  // 전체 라벨 (선택된 기간 내 모든 키)
+  var allKeys = {};
+  STATE.filtered.forEach(function(r){ allKeys[groupKey(r, agg)] = true; });
+  var labels = Object.keys(allKeys).sort();
+
+  // ASIN별 키별 매출 합산
+  var byAsin = {};
+  STATE.filtered.forEach(function(r){
+    if (!isKnownProduct(r.childAsin)) return;
+    var k = groupKey(r, agg);
+    if (!byAsin[r.childAsin]) byAsin[r.childAsin] = {};
+    byAsin[r.childAsin][k] = (byAsin[r.childAsin][k] || 0) + r.sales;
+  });
+
+  // ASIN을 매출 합 내림차순 정렬
+  var asins = Object.keys(byAsin).sort(function(a,b){
+    var sa = 0, sb = 0;
+    for (var k in byAsin[a]) sa += byAsin[a][k];
+    for (var k in byAsin[b]) sb += byAsin[b][k];
+    return sb - sa;
+  });
+
+  var datasets = asins.map(function(asin){
+    var color = productColor(asin);
+    return {
+      label: productName(asin),
+      data: labels.map(function(k){ return byAsin[asin][k] || 0; }),
+      borderColor: color,
+      backgroundColor: color + '22',
+      borderWidth: 2,
+      tension: 0.35,
+      fill: false,
+      pointRadius: 2,
+      pointHoverRadius: 5
+    };
+  });
+
+  makeLineChart('chartProductLines', labels, datasets, function(v){ return fmt$(v); });
+}
+
 function renderProductSales() {
   var asin = STATE.selectedProductSales;
   if (!asin || !isKnownProduct(asin)) {
