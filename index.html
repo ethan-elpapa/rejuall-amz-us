@@ -1007,22 +1007,35 @@ function onDataLoaded(resp) {
   applyFilter();
 }
 
-// 제품 드롭다운 옵션 채우기 (ASIN-INFO 탭의 제품만)
+// 제품 드롭다운 옵션 채우기 (ASIN-INFO 탭의 제품만, 누적 매출 내림차순)
 function buildProductDropdown() {
+  // ASIN별 누적 매출 합계 계산 (전체 raw 데이터 기준 — 필터 무관 일관 순서)
+  var revByAsin = {};
+  (STATE.raw || []).forEach(function(r){
+    var a = r.childAsin;
+    if (!a) return;
+    revByAsin[a] = (revByAsin[a] || 0) + (r.sales || 0);
+  });
+
+  // 매출 내림차순 정렬 (매출 동일/없으면 원래 순서 유지)
+  var sortedAsins = STATE.knownAsins.slice().sort(function(a, b){
+    return (revByAsin[b] || 0) - (revByAsin[a] || 0);
+  });
+
   ['productSelect', 'productSelectSales'].forEach(function(id){
     var sel = document.getElementById(id);
     if (!sel) return;
     sel.innerHTML = '';
-    STATE.knownAsins.forEach(function(asin){
+    sortedAsins.forEach(function(asin){
       var o = document.createElement('option');
       o.value = asin;
       o.textContent = productName(asin);
       sel.appendChild(o);
     });
   });
-  if (STATE.knownAsins.length > 0) {
-    STATE.selectedProduct      = STATE.knownAsins[0];
-    STATE.selectedProductSales = STATE.knownAsins[0];
+  if (sortedAsins.length > 0) {
+    STATE.selectedProduct      = sortedAsins[0];
+    STATE.selectedProductSales = sortedAsins[0];
     var s1 = document.getElementById('productSelect');
     var s2 = document.getElementById('productSelectSales');
     if (s1) s1.value = STATE.selectedProduct;
