@@ -526,7 +526,7 @@
   <div class="nav-title">대시보드</div>
   <a href="#" class="nav-link active" data-view="overview">📊 Overview</a>
   <a href="#" class="nav-link" data-view="product">🛍️ 제품별 대시보드</a>
-  <a href="/inventory" class="nav-link">📦 재고 대시보드</a>
+  <a href="#" class="nav-link" data-view="inventory">📦 재고 대시보드</a>
   <a href="#" class="nav-link" data-view="ads">📣 광고 대시보드</a>
 </aside>
 
@@ -810,13 +810,24 @@
   </div>
   </div><!-- /view-product -->
 
-  <!-- ════════════ Inventory 뷰 ════════════ -->
+  <!-- ════════════ Inventory 뷰 (SCM 대시보드 임베드 — 같은 도메인 rewrite) ════════════ -->
   <div id="view-inventory" class="view-section" style="display:none">
-    <div class="section-header" style="font-size:18px;margin-top:0">재고 대시보드</div>
-    <div class="card" style="padding:40px;text-align:center;color:#94a3b8">
-      <div style="font-size:48px;margin-bottom:16px">📦</div>
-      <div style="font-size:18px;color:#e2e8f0;margin-bottom:8px">재고 대시보드</div>
-      <div>재고 데이터 연동 준비 중입니다.</div>
+    <div class="section-header" style="font-size:18px;margin-top:0;display:flex;justify-content:space-between;align-items:center">
+      <span>재고 대시보드</span>
+      <a href="/inventory/" target="_blank" rel="noopener"
+         style="font-size:12px;color:#6c8ef7;text-decoration:none;background:rgba(108,142,247,.1);padding:4px 10px;border-radius:6px">
+        새 탭으로 열기 ↗
+      </a>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;background:#fff">
+      <iframe
+        id="inventoryFrame"
+        src="/inventory/"
+        title="SCM 재고/물류 대시보드"
+        loading="lazy"
+        style="display:block;width:100%;height:calc(100vh - 160px);min-height:700px;border:0;background:#f7f8fa"
+        allow="clipboard-write">
+      </iframe>
     </div>
   </div>
 
