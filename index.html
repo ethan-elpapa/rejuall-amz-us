@@ -873,10 +873,68 @@
   <!-- ════════════ SQP 뷰 ════════════ -->
   <div id="view-sqp" class="view-section" style="display:none">
     <div class="section-header" style="font-size:18px;margin-top:0">Search Query Performance</div>
-    <div class="card" style="padding:40px;text-align:center;color:#94a3b8">
-      <div style="font-size:48px;margin-bottom:16px">🔍</div>
-      <div style="font-size:18px;color:#e2e8f0;margin-bottom:8px">Search Query Performance</div>
-      <div>SQP 데이터 연동 준비 중입니다.</div>
+
+    <!-- 컨트롤 바 -->
+    <div class="card" style="padding:14px 16px;margin-bottom:14px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        <div class="filter-group">
+          <span class="filter-label">주차</span>
+          <select class="filter-select" id="sqpWeekSelect" style="min-width:140px"><option value="">전체</option></select>
+        </div>
+        <div class="filter-divider"></div>
+        <div class="filter-group" style="flex:1;min-width:220px">
+          <span class="filter-label">검색어</span>
+          <input type="text" id="sqpSearch" placeholder="키워드 검색 (예: pdrn, rejuall, anua…)"
+            style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">최소 Volume</span>
+          <input type="number" id="sqpMinVol" placeholder="0" min="0"
+            style="width:90px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">정렬</span>
+          <select class="filter-select" id="sqpSort">
+            <option value="score-asc">Score ↑ (랭킹)</option>
+            <option value="volume-desc">Volume ↓</option>
+            <option value="volume-asc">Volume ↑</option>
+            <option value="delta-desc">+% ↓</option>
+            <option value="delta-asc">+% ↑</option>
+            <option value="query-asc">검색어 A→Z</option>
+          </select>
+        </div>
+        <button class="filter-reset" id="sqpReset">초기화</button>
+      </div>
+    </div>
+
+    <!-- 요약 KPI -->
+    <div class="grid-4" id="sqpKpiRow" style="margin-bottom:14px"></div>
+
+    <!-- 데이터 테이블 -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div class="card-title" style="margin:0">검색어 목록 <span id="sqpCount" style="color:var(--muted);font-weight:400;margin-left:6px"></span></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;color:var(--muted)" id="sqpUpdated"></span>
+          <button class="filter-reset" id="sqpExport" style="font-size:11px">CSV 내보내기</button>
+        </div>
+      </div>
+      <div style="max-height:65vh;overflow:auto">
+        <table id="sqpTable" style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead style="position:sticky;top:0;background:#f8fafc;z-index:1">
+            <tr style="border-bottom:2px solid var(--border)">
+              <th style="text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:60px">Score</th>
+              <th style="text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Search Query</th>
+              <th style="text-align:right;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:110px">Volume</th>
+              <th style="text-align:right;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:90px">+%</th>
+              <th style="text-align:center;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:90px">주차</th>
+            </tr>
+          </thead>
+          <tbody id="sqpTbody">
+            <tr><td colspan="5" style="padding:40px;text-align:center;color:var(--muted)">데이터 로딩 대기 중…</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </main>
@@ -2078,9 +2136,226 @@ function bindSidebar() {
       if (ad) ad.style.display = (view === 'ads')       ? 'block' : 'none';
       if (sq) sq.style.display = (view === 'sqp')       ? 'block' : 'none';
 
+      if (view === 'sqp' && !SQP.loaded && !SQP.loading) loadSqp();
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
+}
+
+// ═══════════════════════════════════════════════════════
+//  SQP (Search Query Performance)
+// ═══════════════════════════════════════════════════════
+var SQP = {
+  raw: [],
+  weeks: [],
+  loaded: false,
+  loading: false,
+  filter: { week: '', q: '', minVol: 0, sort: 'score-asc' },
+  updatedAt: ''
+};
+
+function loadSqp() {
+  if (SQP.loading) return;
+  SQP.loading = true;
+  var tbody = document.getElementById('sqpTbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#94a3b8">SQP 데이터 불러오는 중…</td></tr>';
+
+  fetch('/api/sqp')
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data){
+      if (!data || data.ok === false) throw new Error((data && data.error) || 'API 오류');
+      SQP.raw = data.rows || [];
+      SQP.weeks = data.weeks || [];
+      SQP.updatedAt = data.updatedAt || '';
+      SQP.loaded = true;
+      SQP.loading = false;
+      buildSqpWeekOptions();
+      bindSqpControls();
+      // 기본: 최신 주차 선택
+      if (SQP.weeks.length) {
+        var latest = SQP.weeks[SQP.weeks.length - 1];
+        SQP.filter.week = latest.code;
+        var sel = document.getElementById('sqpWeekSelect');
+        if (sel) sel.value = latest.code;
+      }
+      renderSqp();
+    })
+    .catch(function(e){
+      SQP.loading = false;
+      var tb = document.getElementById('sqpTbody');
+      if (tb) tb.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#dc2626">SQP 로드 실패: ' + (e.message || e) + '</td></tr>';
+    });
+}
+
+function buildSqpWeekOptions() {
+  var sel = document.getElementById('sqpWeekSelect');
+  if (!sel) return;
+  var html = '<option value="">전체 주차</option>';
+  SQP.weeks.forEach(function(w){
+    var label = w.label && w.label !== w.code ? (w.code + ' · ' + w.label) : w.code;
+    html += '<option value="' + w.code + '">' + label + '</option>';
+  });
+  sel.innerHTML = html;
+
+  var upd = document.getElementById('sqpUpdated');
+  if (upd && SQP.updatedAt) upd.textContent = '업데이트: ' + new Date(SQP.updatedAt).toLocaleString('ko-KR');
+}
+
+function bindSqpControls() {
+  if (SQP._bound) return;
+  SQP._bound = true;
+  var sel = document.getElementById('sqpWeekSelect');
+  var inp = document.getElementById('sqpSearch');
+  var mv  = document.getElementById('sqpMinVol');
+  var st  = document.getElementById('sqpSort');
+  var rs  = document.getElementById('sqpReset');
+  var ex  = document.getElementById('sqpExport');
+
+  if (sel) sel.addEventListener('change', function(){ SQP.filter.week = this.value; renderSqp(); });
+  if (inp) {
+    var t = null;
+    inp.addEventListener('input', function(){
+      var v = this.value;
+      clearTimeout(t);
+      t = setTimeout(function(){ SQP.filter.q = v.trim().toLowerCase(); renderSqp(); }, 150);
+    });
+  }
+  if (mv) mv.addEventListener('input', function(){ SQP.filter.minVol = parseFloat(this.value) || 0; renderSqp(); });
+  if (st) st.addEventListener('change', function(){ SQP.filter.sort = this.value; renderSqp(); });
+  if (rs) rs.addEventListener('click', function(){
+    SQP.filter = { week: '', q: '', minVol: 0, sort: 'score-asc' };
+    if (sel) sel.value = '';
+    if (inp) inp.value = '';
+    if (mv)  mv.value  = '';
+    if (st)  st.value  = 'score-asc';
+    renderSqp();
+  });
+  if (ex) ex.addEventListener('click', exportSqpCsv);
+}
+
+function filterSqpRows() {
+  var f = SQP.filter;
+  var qTokens = f.q ? f.q.split(/\s+/).filter(Boolean) : [];
+  var rows = SQP.raw.filter(function(r){
+    if (f.week && r.weekCode !== f.week) return false;
+    if (f.minVol && (r.volume == null || r.volume < f.minVol)) return false;
+    if (qTokens.length) {
+      var q = (r.query || '').toLowerCase();
+      for (var i=0; i<qTokens.length; i++) if (q.indexOf(qTokens[i]) < 0) return false;
+    }
+    return true;
+  });
+
+  var sort = f.sort || 'score-asc';
+  var dir = sort.endsWith('-desc') ? -1 : 1;
+  var key = sort.replace(/-(asc|desc)$/, '');
+  rows.sort(function(a, b){
+    var av, bv;
+    if (key === 'query') { av = a.query || ''; bv = b.query || ''; return av.localeCompare(bv) * dir; }
+    av = a[key]; bv = b[key];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return (av - bv) * dir;
+  });
+  return rows;
+}
+
+function fmtNum(n) {
+  if (n == null || isNaN(n)) return '—';
+  return Math.round(n).toLocaleString('en-US');
+}
+
+function fmtPct(n) {
+  if (n == null || isNaN(n)) return '';
+  var sign = n > 0 ? '+' : '';
+  return sign + n.toFixed(2) + '%';
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function renderSqp() {
+  var rows = filterSqpRows();
+
+  // KPI
+  var kpi = document.getElementById('sqpKpiRow');
+  if (kpi) {
+    var totalVol = 0, top10Vol = 0, gainers = 0, losers = 0;
+    rows.forEach(function(r){
+      if (r.volume) totalVol += r.volume;
+      if (r.score != null && r.score <= 10 && r.volume) top10Vol += r.volume;
+      if (r.delta != null) { if (r.delta > 0) gainers++; else if (r.delta < 0) losers++; }
+    });
+    kpi.innerHTML =
+      '<div class="card"><div class="card-title">총 검색어</div><div class="kpi-value blue">' + rows.length.toLocaleString() + '</div><div class="kpi-sub">필터 적용 후</div></div>' +
+      '<div class="card"><div class="card-title">총 Volume</div><div class="kpi-value green">' + fmtNum(totalVol) + '</div><div class="kpi-sub">합계</div></div>' +
+      '<div class="card"><div class="card-title">Top10 Volume</div><div class="kpi-value yellow">' + fmtNum(top10Vol) + '</div><div class="kpi-sub">Score ≤ 10</div></div>' +
+      '<div class="card"><div class="card-title">변동 (+/−)</div><div class="kpi-value pink">' + gainers + ' / ' + losers + '</div><div class="kpi-sub">상승 / 하락</div></div>';
+  }
+
+  var cnt = document.getElementById('sqpCount');
+  if (cnt) cnt.textContent = '(' + rows.length.toLocaleString() + '개)';
+
+  var tbody = document.getElementById('sqpTbody');
+  if (!tbody) return;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#94a3b8">조건에 맞는 검색어가 없습니다</td></tr>';
+    return;
+  }
+
+  // 가상 렌더 대신 상위 1000개로 제한 (성능)
+  var MAX = 1000;
+  var shown = rows.slice(0, MAX);
+  var html = '';
+  for (var i = 0; i < shown.length; i++) {
+    var r = shown[i];
+    var dColor = '';
+    if (r.delta != null) {
+      if (r.delta > 0) dColor = 'color:#059669;font-weight:600';
+      else if (r.delta < 0) dColor = 'color:#dc2626;font-weight:600';
+    }
+    var scoreBadge = r.score != null && r.score <= 10
+      ? '<span style="display:inline-block;padding:2px 7px;border-radius:999px;background:rgba(108,142,247,.15);color:#2e75b6;font-weight:700;font-size:11px">' + r.score + '</span>'
+      : (r.score != null ? r.score : '—');
+    html += '<tr style="border-bottom:1px solid #f1f5f9">'
+      + '<td style="padding:8px 12px">' + scoreBadge + '</td>'
+      + '<td style="padding:8px 12px">' + escapeHtml(r.query) + '</td>'
+      + '<td style="padding:8px 12px;text-align:right;font-variant-numeric:tabular-nums">' + fmtNum(r.volume) + '</td>'
+      + '<td style="padding:8px 12px;text-align:right;font-variant-numeric:tabular-nums;' + dColor + '">' + fmtPct(r.delta) + '</td>'
+      + '<td style="padding:8px 12px;text-align:center;color:#6b7280;font-size:11px">' + escapeHtml(r.weekCode) + '</td>'
+      + '</tr>';
+  }
+  if (rows.length > MAX) {
+    html += '<tr><td colspan="5" style="padding:14px;text-align:center;color:#94a3b8;font-size:12px">상위 ' + MAX + '개만 표시 — 검색어로 좁혀주세요 (' + (rows.length - MAX).toLocaleString() + '개 숨김)</td></tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function exportSqpCsv() {
+  var rows = filterSqpRows();
+  if (!rows.length) { alert('내보낼 데이터가 없습니다'); return; }
+  var lines = ['Score,Search Query,Volume,+%,Week'];
+  rows.forEach(function(r){
+    var q = '"' + String(r.query || '').replace(/"/g, '""') + '"';
+    lines.push([
+      r.score == null ? '' : r.score,
+      q,
+      r.volume == null ? '' : r.volume,
+      r.delta == null ? '' : r.delta,
+      r.weekCode || ''
+    ].join(','));
+  });
+  var blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sqp_' + (SQP.filter.week || 'all') + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
 // 시트 값이 KRW인지 자동 감지 (값이 1,000,000 이상이면 KRW로 간주)
