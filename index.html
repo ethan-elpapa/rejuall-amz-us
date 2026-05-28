@@ -880,6 +880,8 @@
         style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:var(--blue);border-bottom:2px solid var(--blue);margin-bottom:-1px">📊 주차별 스냅샷</button>
       <button class="sqp-tab" data-sqp-tab="trend"
         style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px">📈 트렌드 차트</button>
+      <button class="sqp-tab" data-sqp-tab="compare"
+        style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px">🆚 1:1 비교</button>
     </div>
 
     <!-- ── 스냅샷 탭 ── -->
@@ -1012,6 +1014,72 @@
       </div>
 
     </div> <!-- /sqp-pane-trend -->
+
+    <!-- ── 1:1 비교 탭 ── -->
+    <div id="sqp-pane-compare" style="display:none">
+
+      <div class="card" style="padding:14px 16px;margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:end">
+          <div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;font-weight:600">키워드 A <span style="display:inline-block;width:10px;height:10px;background:#2e75b6;border-radius:50%;vertical-align:middle;margin-left:4px"></span></div>
+            <input type="text" id="sqpCompA" list="sqpCompList" placeholder="예: dr rejuall pdrn cream"
+              style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;font-weight:600">키워드 B <span style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:50%;vertical-align:middle;margin-left:4px"></span></div>
+            <input type="text" id="sqpCompB" list="sqpCompList" placeholder="예: rejuran"
+              style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+          </div>
+        </div>
+        <datalist id="sqpCompList"></datalist>
+        <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+          <button class="filter-reset" id="sqpCompRun" style="background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600">비교 실행</button>
+          <button class="filter-reset" id="sqpCompSwap">↔ 좌우 바꾸기</button>
+          <div style="flex:1"></div>
+          <span class="filter-label">지표</span>
+          <select class="filter-select" id="sqpCompMetric">
+            <option value="volume">Volume</option>
+            <option value="score">Score (Rank)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 비교 요약 -->
+      <div class="grid-4" id="sqpCompKpi"></div>
+
+      <!-- 비교 차트 -->
+      <div class="card" style="padding:18px;margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:10px">주차별 비교</div>
+        <div style="height:360px;position:relative">
+          <canvas id="sqpCompChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 비교 테이블 -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+          <div class="card-title" style="margin:0">주차별 데이터</div>
+        </div>
+        <div style="max-height:50vh;overflow:auto">
+          <table id="sqpCompTable" style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead style="position:sticky;top:0;background:#f8fafc;z-index:1">
+              <tr style="border-bottom:2px solid var(--border)">
+                <th style="text-align:center;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">주차</th>
+                <th style="text-align:right;padding:10px 12px;font-size:11px;color:#2e75b6;text-transform:uppercase;letter-spacing:.05em" id="sqpCompHeadA">A</th>
+                <th style="text-align:right;padding:10px 12px;font-size:11px;color:#dc2626;text-transform:uppercase;letter-spacing:.05em" id="sqpCompHeadB">B</th>
+                <th style="text-align:right;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">차이 (A − B)</th>
+                <th style="text-align:right;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">비율 (A/B)</th>
+                <th style="text-align:center;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">우세</th>
+              </tr>
+            </thead>
+            <tbody id="sqpCompTbody">
+              <tr><td colspan="6" style="padding:40px;text-align:center;color:var(--muted)">키워드 A, B를 입력하고 "비교 실행"을 누르세요</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div> <!-- /sqp-pane-compare -->
 
   </div>
 </main>
@@ -2232,9 +2300,12 @@ function bindSidebar() {
       });
       var snap = document.getElementById('sqp-pane-snapshot');
       var tr   = document.getElementById('sqp-pane-trend');
+      var cm   = document.getElementById('sqp-pane-compare');
       if (snap) snap.style.display = tab === 'snapshot' ? 'block' : 'none';
       if (tr)   tr.style.display   = tab === 'trend'    ? 'block' : 'none';
-      if (tab === 'trend') renderSqpTrend();
+      if (cm)   cm.style.display   = tab === 'compare'  ? 'block' : 'none';
+      if (tab === 'trend')   renderSqpTrend();
+      if (tab === 'compare') initSqpCompare();
     });
   });
 }
@@ -2249,6 +2320,7 @@ var SQP = {
   loading: false,
   filter: { week: '', q: '', minVol: 0, sort: 'score-asc' },
   trend: { keywords: [], metric: 'volume', chart: null, colors: ['#2e75b6','#059669','#dc2626','#d97706','#db2777','#8b5cf6','#06b6d4','#14b8a6','#f97316','#a3e635'] },
+  compare: { a: '', b: '', metric: 'volume', chart: null },
   updatedAt: ''
 };
 
@@ -2632,6 +2704,192 @@ function renderSqpTrendTable(weeks, labels, datasets, metric) {
     html += '</tr>';
   });
   tbody.innerHTML = html;
+}
+
+// ── 1:1 비교 ───────────────────────────────────────────
+function initSqpCompare() {
+  // datalist 채우기 (고유 키워드 상위 1000개)
+  var dl = document.getElementById('sqpCompList');
+  if (dl && !dl.dataset.filled) {
+    var uniq = {};
+    SQP.raw.forEach(function(r){
+      if (r.query) {
+        var k = r.query;
+        if (!uniq[k]) uniq[k] = 0;
+        uniq[k] += (r.volume || 0);
+      }
+    });
+    var sorted = Object.keys(uniq).sort(function(a,b){ return uniq[b] - uniq[a]; }).slice(0, 1000);
+    dl.innerHTML = sorted.map(function(q){ return '<option value="' + escapeHtml(q) + '"></option>'; }).join('');
+    dl.dataset.filled = '1';
+  }
+
+  if (SQP._compareBound) return;
+  SQP._compareBound = true;
+
+  var a   = document.getElementById('sqpCompA');
+  var b   = document.getElementById('sqpCompB');
+  var run = document.getElementById('sqpCompRun');
+  var sw  = document.getElementById('sqpCompSwap');
+  var met = document.getElementById('sqpCompMetric');
+
+  function doRun() {
+    SQP.compare.a = (a && a.value || '').trim();
+    SQP.compare.b = (b && b.value || '').trim();
+    if (!SQP.compare.a || !SQP.compare.b) { alert('두 키워드 모두 입력하세요'); return; }
+    renderSqpCompare();
+  }
+  if (run) run.addEventListener('click', doRun);
+  if (a) a.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); doRun(); } });
+  if (b) b.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); doRun(); } });
+  if (sw) sw.addEventListener('click', function(){
+    if (!a || !b) return;
+    var t = a.value; a.value = b.value; b.value = t;
+    if (SQP.compare.a || SQP.compare.b) doRun();
+  });
+  if (met) met.addEventListener('change', function(){
+    SQP.compare.metric = this.value;
+    if (SQP.compare.a && SQP.compare.b) renderSqpCompare();
+  });
+}
+
+function seriesForKeyword(kw, metric) {
+  var byWeek = {};
+  var lk = kw.toLowerCase();
+  SQP.raw.forEach(function(r){
+    if ((r.query || '').toLowerCase() === lk) {
+      var prev = byWeek[r.weekCode];
+      if (prev == null) byWeek[r.weekCode] = r;
+      else {
+        if (metric === 'volume') { if ((r.volume || 0) > (prev.volume || 0)) byWeek[r.weekCode] = r; }
+        else { if (r.score != null && (prev.score == null || r.score < prev.score)) byWeek[r.weekCode] = r; }
+      }
+    }
+  });
+  return SQP.weeks.map(function(w){
+    var r = byWeek[w.code];
+    if (!r) return null;
+    return metric === 'volume' ? (r.volume || 0) : r.score;
+  });
+}
+
+function renderSqpCompare() {
+  var metric = SQP.compare.metric;
+  var labels = SQP.weeks.map(function(w){ return w.label || w.code; });
+  var dataA = seriesForKeyword(SQP.compare.a, metric);
+  var dataB = seriesForKeyword(SQP.compare.b, metric);
+
+  // 헤더 라벨
+  var headA = document.getElementById('sqpCompHeadA');
+  var headB = document.getElementById('sqpCompHeadB');
+  if (headA) headA.textContent = SQP.compare.a;
+  if (headB) headB.textContent = SQP.compare.b;
+
+  // 통계
+  function avg(arr){ var v = arr.filter(function(x){return x!=null}); if (!v.length) return null; return v.reduce(function(s,x){return s+x},0)/v.length; }
+  function max(arr){ var v = arr.filter(function(x){return x!=null}); if (!v.length) return null; return Math.max.apply(null, v); }
+  function min(arr){ var v = arr.filter(function(x){return x!=null}); if (!v.length) return null; return Math.min.apply(null, v); }
+  function findWeek(arr, val){ for (var i=0;i<arr.length;i++) if (arr[i]===val) return labels[i]; return ''; }
+
+  var aWins = 0, bWins = 0, ties = 0;
+  for (var i=0; i<labels.length; i++) {
+    if (dataA[i] == null || dataB[i] == null) continue;
+    if (metric === 'volume') {
+      if (dataA[i] > dataB[i]) aWins++; else if (dataA[i] < dataB[i]) bWins++; else ties++;
+    } else {
+      // score: 낮을수록 우세
+      if (dataA[i] < dataB[i]) aWins++; else if (dataA[i] > dataB[i]) bWins++; else ties++;
+    }
+  }
+
+  var avgA = avg(dataA), avgB = avg(dataB);
+  var bestA = metric === 'volume' ? max(dataA) : min(dataA);
+  var bestB = metric === 'volume' ? max(dataB) : min(dataB);
+  var bestAweek = bestA != null ? findWeek(dataA, bestA) : '';
+  var bestBweek = bestB != null ? findWeek(dataB, bestB) : '';
+
+  function fmt(v) { if (v == null) return '—'; return metric === 'volume' ? Math.round(v).toLocaleString() : '#' + Math.round(v); }
+
+  var kpi = document.getElementById('sqpCompKpi');
+  if (kpi) {
+    kpi.innerHTML =
+      '<div class="card"><div class="card-title">평균 (A vs B)</div>'
+      + '<div style="font-size:20px;font-weight:700;color:#2e75b6">' + fmt(avgA) + '</div>'
+      + '<div style="font-size:20px;font-weight:700;color:#dc2626">' + fmt(avgB) + '</div></div>'
+      + '<div class="card"><div class="card-title">최고치 (A)</div>'
+      + '<div class="kpi-value blue">' + fmt(bestA) + '</div>'
+      + '<div class="kpi-sub">' + escapeHtml(bestAweek) + '</div></div>'
+      + '<div class="card"><div class="card-title">최고치 (B)</div>'
+      + '<div class="kpi-value" style="color:#dc2626">' + fmt(bestB) + '</div>'
+      + '<div class="kpi-sub">' + escapeHtml(bestBweek) + '</div></div>'
+      + '<div class="card"><div class="card-title">우세 주차</div>'
+      + '<div style="font-size:20px;font-weight:700"><span style="color:#2e75b6">A ' + aWins + '</span> · <span style="color:#dc2626">B ' + bWins + '</span>' + (ties ? ' · <span style="color:#94a3b8">= ' + ties + '</span>' : '') + '</div>'
+      + '<div class="kpi-sub">두 키워드 모두 데이터 있는 주차 기준</div></div>';
+  }
+
+  // 차트
+  var canvas = document.getElementById('sqpCompChart');
+  if (canvas && typeof Chart !== 'undefined') {
+    if (SQP.compare.chart) { SQP.compare.chart.destroy(); SQP.compare.chart = null; }
+    SQP.compare.chart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels: labels, datasets: [
+        { label: SQP.compare.a, data: dataA, borderColor: '#2e75b6', backgroundColor: '#2e75b633', tension: 0.3, spanGaps: true, pointRadius: 4, pointHoverRadius: 7, borderWidth: 3 },
+        { label: SQP.compare.b, data: dataB, borderColor: '#dc2626', backgroundColor: '#dc262633', tension: 0.3, spanGaps: true, pointRadius: 4, pointHoverRadius: 7, borderWidth: 3 }
+      ]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { ticks: { autoSkip: true, maxRotation: 0 } },
+          y: {
+            beginAtZero: metric === 'volume',
+            reverse: metric === 'score',
+            ticks: { callback: function(v){ return Math.round(v).toLocaleString(); } },
+            title: { display: true, text: metric === 'volume' ? 'Search Volume' : 'Rank (Score)' }
+          }
+        },
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { callbacks: { label: function(ctx){
+            var v = ctx.parsed.y;
+            if (v == null) return ctx.dataset.label + ': (데이터 없음)';
+            return ctx.dataset.label + ': ' + (metric === 'volume' ? v.toLocaleString() : '#' + v);
+          }}},
+          datalabels: { display: false }
+        }
+      }
+    });
+  }
+
+  // 테이블
+  var tbody = document.getElementById('sqpCompTbody');
+  if (tbody) {
+    var html = '';
+    for (var i = 0; i < labels.length; i++) {
+      var va = dataA[i], vb = dataB[i];
+      var diff = (va != null && vb != null) ? (va - vb) : null;
+      var ratio = (va != null && vb != null && vb !== 0) ? (va / vb) : null;
+      var dominant = '';
+      if (va != null && vb != null) {
+        var aBetter = metric === 'volume' ? va > vb : va < vb;
+        var bBetter = metric === 'volume' ? vb > va : vb < va;
+        if (aBetter) dominant = '<span style="color:#2e75b6;font-weight:700">A ▲</span>';
+        else if (bBetter) dominant = '<span style="color:#dc2626;font-weight:700">B ▲</span>';
+        else dominant = '<span style="color:#94a3b8">=</span>';
+      }
+      var diffColor = diff == null ? '#cbd5e1' : (diff > 0 ? '#2e75b6' : (diff < 0 ? '#dc2626' : '#94a3b8'));
+      html += '<tr style="border-bottom:1px solid #f1f5f9">'
+        + '<td style="padding:8px 12px;text-align:center;color:#6b7280;font-size:11px">' + escapeHtml(labels[i]) + '</td>'
+        + '<td style="padding:8px 12px;text-align:right;font-variant-numeric:tabular-nums;color:' + (va == null ? '#cbd5e1' : '#2e75b6') + ';font-weight:600">' + fmt(va) + '</td>'
+        + '<td style="padding:8px 12px;text-align:right;font-variant-numeric:tabular-nums;color:' + (vb == null ? '#cbd5e1' : '#dc2626') + ';font-weight:600">' + fmt(vb) + '</td>'
+        + '<td style="padding:8px 12px;text-align:right;font-variant-numeric:tabular-nums;color:' + diffColor + '">' + (diff == null ? '—' : (diff > 0 ? '+' : '') + Math.round(diff).toLocaleString()) + '</td>'
+        + '<td style="padding:8px 12px;text-align:right;font-variant-numeric:tabular-nums;color:#374151">' + (ratio == null ? '—' : ratio.toFixed(2) + '×') + '</td>'
+        + '<td style="padding:8px 12px;text-align:center">' + dominant + '</td>'
+        + '</tr>';
+    }
+    tbody.innerHTML = html;
+  }
 }
 
 function exportSqpCsv() {
