@@ -874,6 +874,17 @@
   <div id="view-sqp" class="view-section" style="display:none">
     <div class="section-header" style="font-size:18px;margin-top:0">Search Query Performance</div>
 
+    <!-- 탭 -->
+    <div style="display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border)">
+      <button class="sqp-tab active" data-sqp-tab="snapshot"
+        style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:var(--blue);border-bottom:2px solid var(--blue);margin-bottom:-1px">📊 주차별 스냅샷</button>
+      <button class="sqp-tab" data-sqp-tab="trend"
+        style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px">📈 트렌드 차트</button>
+    </div>
+
+    <!-- ── 스냅샷 탭 ── -->
+    <div id="sqp-pane-snapshot">
+
     <!-- 컨트롤 바 -->
     <div class="card" style="padding:14px 16px;margin-bottom:14px">
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
@@ -928,14 +939,80 @@
               <th style="text-align:right;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:110px">Volume</th>
               <th style="text-align:right;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:90px">+%</th>
               <th style="text-align:center;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:90px">주차</th>
+              <th style="text-align:center;padding:10px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:60px">추적</th>
             </tr>
           </thead>
           <tbody id="sqpTbody">
-            <tr><td colspan="5" style="padding:40px;text-align:center;color:var(--muted)">데이터 로딩 대기 중…</td></tr>
+            <tr><td colspan="6" style="padding:40px;text-align:center;color:var(--muted)">데이터 로딩 대기 중…</td></tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    </div> <!-- /sqp-pane-snapshot -->
+
+    <!-- ── 트렌드 차트 탭 ── -->
+    <div id="sqp-pane-trend" style="display:none">
+
+      <!-- 키워드 컨트롤 -->
+      <div class="card" style="padding:14px 16px;margin-bottom:14px">
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px">
+          <div class="filter-group" style="flex:1;min-width:240px">
+            <span class="filter-label">키워드 추가</span>
+            <input type="text" id="sqpTrendInput" placeholder="검색어 입력 후 Enter (예: pdrn cream)"
+              style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)">
+            <button class="filter-reset" id="sqpTrendAdd">추가</button>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-group">
+            <span class="filter-label">지표</span>
+            <select class="filter-select" id="sqpTrendMetric">
+              <option value="volume">Volume</option>
+              <option value="score">Score (낮을수록 상위)</option>
+            </select>
+          </div>
+          <button class="filter-reset" id="sqpTrendClear">전체 지우기</button>
+        </div>
+
+        <!-- 빠른 추가 프리셋 -->
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+          <span style="font-size:11px;color:var(--muted);align-self:center;margin-right:4px">빠른 추가:</span>
+          <button class="sqp-preset" data-preset="brand" style="padding:4px 10px;border:1px solid var(--border);background:transparent;border-radius:999px;font-size:11px;cursor:pointer;color:var(--muted)">내 브랜드 (rejuall/dr reju)</button>
+          <button class="sqp-preset" data-preset="competitor" style="padding:4px 10px;border:1px solid var(--border);background:transparent;border-radius:999px;font-size:11px;cursor:pointer;color:var(--muted)">경쟁사 (rejuran/medicube/anua)</button>
+          <button class="sqp-preset" data-preset="category" style="padding:4px 10px;border:1px solid var(--border);background:transparent;border-radius:999px;font-size:11px;cursor:pointer;color:var(--muted)">카테고리 (pdrn/pdrn cream/pdrn serum)</button>
+        </div>
+
+        <!-- 선택된 키워드 칩 -->
+        <div id="sqpTrendChips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:28px"></div>
+      </div>
+
+      <!-- 차트 -->
+      <div class="card" style="padding:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="card-title" style="margin:0">주차별 추이 <span id="sqpTrendInfo" style="color:var(--muted);font-weight:400;margin-left:6px"></span></div>
+        </div>
+        <div style="height:380px;position:relative">
+          <canvas id="sqpTrendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 데이터 테이블 -->
+      <div class="card" style="padding:0;overflow:hidden;margin-top:14px">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+          <div class="card-title" style="margin:0">주차별 데이터 (Pivot)</div>
+        </div>
+        <div style="max-height:50vh;overflow:auto">
+          <table id="sqpTrendTable" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead style="position:sticky;top:0;background:#f8fafc;z-index:1"><tr id="sqpTrendThead"></tr></thead>
+            <tbody id="sqpTrendTbody">
+              <tr><td style="padding:40px;text-align:center;color:var(--muted)">키워드를 추가하면 주차별 추이가 표시됩니다</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div> <!-- /sqp-pane-trend -->
+
   </div>
 </main>
 </div>
@@ -2141,6 +2218,25 @@ function bindSidebar() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
+
+  // SQP 탭 전환
+  document.querySelectorAll('.sqp-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tab = this.getAttribute('data-sqp-tab');
+      document.querySelectorAll('.sqp-tab').forEach(function(b){
+        var active = b.getAttribute('data-sqp-tab') === tab;
+        b.classList.toggle('active', active);
+        b.style.color = active ? '#2e75b6' : '#4b5563';
+        b.style.fontWeight = active ? '600' : '500';
+        b.style.borderBottomColor = active ? '#2e75b6' : 'transparent';
+      });
+      var snap = document.getElementById('sqp-pane-snapshot');
+      var tr   = document.getElementById('sqp-pane-trend');
+      if (snap) snap.style.display = tab === 'snapshot' ? 'block' : 'none';
+      if (tr)   tr.style.display   = tab === 'trend'    ? 'block' : 'none';
+      if (tab === 'trend') renderSqpTrend();
+    });
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2152,6 +2248,7 @@ var SQP = {
   loaded: false,
   loading: false,
   filter: { week: '', q: '', minVol: 0, sort: 'score-asc' },
+  trend: { keywords: [], metric: 'volume', chart: null, colors: ['#2e75b6','#059669','#dc2626','#d97706','#db2777','#8b5cf6','#06b6d4','#14b8a6','#f97316','#a3e635'] },
   updatedAt: ''
 };
 
@@ -2323,17 +2420,217 @@ function renderSqp() {
     var scoreBadge = r.score != null && r.score <= 10
       ? '<span style="display:inline-block;padding:2px 7px;border-radius:999px;background:rgba(108,142,247,.15);color:#2e75b6;font-weight:700;font-size:11px">' + r.score + '</span>'
       : (r.score != null ? r.score : '—');
+    var inTrend = SQP.trend.keywords.indexOf(r.query) > -1;
     html += '<tr style="border-bottom:1px solid #f1f5f9">'
       + '<td style="padding:8px 12px">' + scoreBadge + '</td>'
       + '<td style="padding:8px 12px">' + escapeHtml(r.query) + '</td>'
       + '<td style="padding:8px 12px;text-align:right;font-variant-numeric:tabular-nums">' + fmtNum(r.volume) + '</td>'
       + '<td style="padding:8px 12px;text-align:right;font-variant-numeric:tabular-nums;' + dColor + '">' + fmtPct(r.delta) + '</td>'
       + '<td style="padding:8px 12px;text-align:center;color:#6b7280;font-size:11px">' + escapeHtml(r.weekCode) + '</td>'
+      + '<td style="padding:8px 12px;text-align:center">'
+        + '<button class="sqp-track-btn" data-query="' + escapeHtml(r.query) + '" title="트렌드 차트에 추가" '
+        + 'style="border:1px solid ' + (inTrend ? '#2e75b6' : 'var(--border)') + ';background:' + (inTrend ? 'rgba(108,142,247,.15)' : 'transparent') + ';color:' + (inTrend ? '#2e75b6' : 'var(--muted)') + ';border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;font-weight:600">'
+        + (inTrend ? '✓' : '＋') + '</button>'
+      + '</td>'
       + '</tr>';
   }
   if (rows.length > MAX) {
-    html += '<tr><td colspan="5" style="padding:14px;text-align:center;color:#94a3b8;font-size:12px">상위 ' + MAX + '개만 표시 — 검색어로 좁혀주세요 (' + (rows.length - MAX).toLocaleString() + '개 숨김)</td></tr>';
+    html += '<tr><td colspan="6" style="padding:14px;text-align:center;color:#94a3b8;font-size:12px">상위 ' + MAX + '개만 표시 — 검색어로 좁혀주세요 (' + (rows.length - MAX).toLocaleString() + '개 숨김)</td></tr>';
   }
+  tbody.innerHTML = html;
+
+  // 행별 "추적" 버튼 wire-up
+  tbody.querySelectorAll('.sqp-track-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      var q = this.getAttribute('data-query');
+      addSqpTrendKeyword(q);
+      renderSqp(); // 버튼 상태 갱신
+    });
+  });
+}
+
+// ── 트렌드 차트 ────────────────────────────────────────
+function addSqpTrendKeyword(q) {
+  if (!q) return;
+  q = String(q).trim();
+  if (!q) return;
+  if (SQP.trend.keywords.indexOf(q) > -1) return;
+  if (SQP.trend.keywords.length >= 10) { alert('최대 10개까지 추가 가능합니다'); return; }
+  SQP.trend.keywords.push(q);
+  renderSqpTrend();
+}
+
+function removeSqpTrendKeyword(q) {
+  SQP.trend.keywords = SQP.trend.keywords.filter(function(k){ return k !== q; });
+  renderSqpTrend();
+  renderSqp();
+}
+
+function bindSqpTrendControls() {
+  if (SQP._trendBound) return;
+  SQP._trendBound = true;
+
+  var inp = document.getElementById('sqpTrendInput');
+  var add = document.getElementById('sqpTrendAdd');
+  var clr = document.getElementById('sqpTrendClear');
+  var met = document.getElementById('sqpTrendMetric');
+
+  function commit() {
+    if (!inp) return;
+    var v = inp.value.trim();
+    if (v) { addSqpTrendKeyword(v); inp.value = ''; }
+  }
+  if (inp) inp.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); commit(); } });
+  if (add) add.addEventListener('click', commit);
+  if (clr) clr.addEventListener('click', function(){
+    SQP.trend.keywords = [];
+    renderSqpTrend();
+    renderSqp();
+  });
+  if (met) met.addEventListener('change', function(){ SQP.trend.metric = this.value; renderSqpTrend(); });
+
+  document.querySelectorAll('.sqp-preset').forEach(function(b){
+    b.addEventListener('click', function(){
+      var preset = this.getAttribute('data-preset');
+      var keys = [];
+      if (preset === 'brand') keys = ['rejuall','dr rejuall','dr reju all','reju-all','dr. reju-all'];
+      else if (preset === 'competitor') keys = ['rejuran','medicube','anua','medicube pdrn','anua pdrn'];
+      else if (preset === 'category') keys = ['pdrn','pdrn cream','pdrn serum'];
+      keys.forEach(addSqpTrendKeyword);
+    });
+  });
+}
+
+function renderSqpTrend() {
+  bindSqpTrendControls();
+
+  // 칩 렌더
+  var chipsEl = document.getElementById('sqpTrendChips');
+  if (chipsEl) {
+    if (!SQP.trend.keywords.length) {
+      chipsEl.innerHTML = '<span style="font-size:12px;color:var(--muted);align-self:center">키워드를 추가하거나 빠른 추가 버튼을 클릭하세요</span>';
+    } else {
+      chipsEl.innerHTML = SQP.trend.keywords.map(function(k, i){
+        var c = SQP.trend.colors[i % SQP.trend.colors.length];
+        return '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:' + c + '22;border:1px solid ' + c + ';color:' + c + ';font-size:12px;font-weight:600">'
+          + escapeHtml(k)
+          + '<button class="sqp-chip-del" data-q="' + escapeHtml(k) + '" style="background:none;border:none;cursor:pointer;color:inherit;font-size:14px;line-height:1;padding:0">×</button>'
+          + '</span>';
+      }).join('');
+      chipsEl.querySelectorAll('.sqp-chip-del').forEach(function(b){
+        b.addEventListener('click', function(){ removeSqpTrendKeyword(this.getAttribute('data-q')); });
+      });
+    }
+  }
+
+  // 차트/테이블 데이터 준비
+  var weeks = SQP.weeks.slice(); // {code,label,num}
+  var labels = weeks.map(function(w){ return w.label || w.code; });
+  var metric = SQP.trend.metric;
+
+  // 키워드별 weekCode → value 맵
+  var datasets = SQP.trend.keywords.map(function(kw, idx){
+    var color = SQP.trend.colors[idx % SQP.trend.colors.length];
+    var byWeek = {};
+    var kwLow = kw.toLowerCase();
+    SQP.raw.forEach(function(r){
+      if ((r.query || '').toLowerCase() === kwLow) {
+        // 같은 주차에 중복이 있다면 가장 좋은 값 채택 (volume max, score min)
+        var prev = byWeek[r.weekCode];
+        if (prev == null) byWeek[r.weekCode] = r;
+        else {
+          if (metric === 'volume') {
+            if ((r.volume || 0) > (prev.volume || 0)) byWeek[r.weekCode] = r;
+          } else {
+            if ((r.score != null) && (prev.score == null || r.score < prev.score)) byWeek[r.weekCode] = r;
+          }
+        }
+      }
+    });
+    var data = weeks.map(function(w){
+      var r = byWeek[w.code];
+      if (!r) return null;
+      return metric === 'volume' ? (r.volume || 0) : r.score;
+    });
+    return { label: kw, data: data, borderColor: color, backgroundColor: color + '33', tension: 0.3, spanGaps: true, pointRadius: 3, pointHoverRadius: 6 };
+  });
+
+  // 차트 렌더
+  var canvas = document.getElementById('sqpTrendChart');
+  if (canvas && typeof Chart !== 'undefined') {
+    if (SQP.trend.chart) { SQP.trend.chart.destroy(); SQP.trend.chart = null; }
+    SQP.trend.chart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { ticks: { autoSkip: true, maxRotation: 0 } },
+          y: {
+            beginAtZero: metric === 'volume',
+            reverse: metric === 'score',
+            ticks: {
+              callback: function(v){ return Math.round(v).toLocaleString(); }
+            },
+            title: { display: true, text: metric === 'volume' ? 'Search Volume' : 'Rank (Score)' }
+          }
+        },
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: function(ctx){
+                var v = ctx.parsed.y;
+                if (v == null) return ctx.dataset.label + ': (데이터 없음)';
+                return ctx.dataset.label + ': ' + (metric === 'volume' ? v.toLocaleString() : '#' + v);
+              }
+            }
+          },
+          datalabels: { display: false }
+        }
+      }
+    });
+  }
+
+  var info = document.getElementById('sqpTrendInfo');
+  if (info) info.textContent = SQP.trend.keywords.length ? '(' + SQP.trend.keywords.length + '개 키워드 · ' + weeks.length + '주차)' : '';
+
+  // Pivot 테이블 렌더
+  renderSqpTrendTable(weeks, labels, datasets, metric);
+}
+
+function renderSqpTrendTable(weeks, labels, datasets, metric) {
+  var thead = document.getElementById('sqpTrendThead');
+  var tbody = document.getElementById('sqpTrendTbody');
+  if (!thead || !tbody) return;
+
+  if (!datasets.length) {
+    thead.innerHTML = '';
+    tbody.innerHTML = '<tr><td style="padding:40px;text-align:center;color:#94a3b8">키워드를 추가하면 주차별 추이가 표시됩니다</td></tr>';
+    return;
+  }
+
+  var th = '<th style="text-align:left;padding:8px 10px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;position:sticky;left:0;background:#f8fafc;z-index:2">키워드</th>';
+  for (var i = 0; i < weeks.length; i++) {
+    th += '<th style="text-align:right;padding:8px 10px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">' + escapeHtml(labels[i]) + '</th>';
+  }
+  thead.innerHTML = th;
+
+  var html = '';
+  datasets.forEach(function(ds, idx){
+    var color = SQP.trend.colors[idx % SQP.trend.colors.length];
+    html += '<tr style="border-bottom:1px solid #f1f5f9">';
+    html += '<td style="padding:8px 10px;position:sticky;left:0;background:#fff;font-weight:600;color:' + color + '">'
+      + '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:6px"></span>'
+      + escapeHtml(ds.label) + '</td>';
+    ds.data.forEach(function(v){
+      var disp = v == null ? '—' : (metric === 'volume' ? Math.round(v).toLocaleString() : '#' + v);
+      html += '<td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;color:' + (v == null ? '#cbd5e1' : '#111827') + '">' + disp + '</td>';
+    });
+    html += '</tr>';
+  });
   tbody.innerHTML = html;
 }
 
