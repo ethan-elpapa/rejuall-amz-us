@@ -990,9 +990,19 @@
     </div>
 
     <!-- 서치텀 분석 -->
-    <div class="section-header" style="font-size:16px;margin-top:30px">
-      서치텀 추천 액션
-      <span style="font-size:11px;color:#64748b;font-weight:400;margin-left:8px">· 제품 탭을 선택해서 확인하세요</span>
+    <div class="section-header" style="font-size:16px;margin-top:30px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span>서치텀 추천 액션</span>
+      <span style="font-size:11px;color:#64748b;font-weight:400">· 제품/기간 탭을 선택해서 확인하세요</span>
+      <span style="flex:1"></span>
+      <div style="display:flex;gap:6px;align-items:center;font-size:12px;color:#94a3b8;font-weight:400">
+        <span>기간</span>
+        <select id="stPeriodSelect" class="filter-select" style="min-width:120px;padding:4px 8px;font-size:12px">
+          <option value="all">전체</option>
+          <option value="last12w">최근 12주</option>
+          <option value="last4w">최근 4주</option>
+          <option value="last1w">최근 1주</option>
+        </select>
+      </div>
     </div>
 
     <!-- 제품 탭 -->
@@ -1353,8 +1363,10 @@ function onDataLoaded(resp) {
   STATE.productColors= resp.productColors || {};
   STATE.sheetGoals   = resp.monthlyGoals || {};  // 시트의 '목표 매출' 탭에서 가져옴
   STATE.adRows           = resp.adRows           || [];
-  STATE.searchTerms      = resp.searchTerms      || [];
-  STATE.searchTermsWeekly= resp.searchTermsWeekly|| [];
+  STATE.searchTerms        = resp.searchTerms        || [];
+  STATE.searchTermsWeekly  = resp.searchTermsWeekly  || [];
+  STATE.searchTermsPeriods = resp.searchTermsPeriods || null;
+  STATE.searchTermsWeeks   = resp.searchTermsWeeks   || [];
   setTimeout(function(){ renderAdsView(); }, 0);  // 광고 뷰 렌더 (DOM ready 후)
 
   if (resp.updatedAt) {
@@ -1913,12 +1925,29 @@ function isAsinLike(term) {
 }
 
 // 서치텀 섹션 내부 제품 탭 (상단 광고 필터와 별개)
-var ST_STATE = { activeAsin: '' };  // '' = 전체
+var ST_STATE = { activeAsin: '', period: 'all' };  // '' = 전체
+
+function bindStPeriod() {
+  var sel = document.getElementById('stPeriodSelect');
+  if (!sel || sel.dataset.bound === '1') return;
+  sel.addEventListener('change', function(){
+    ST_STATE.period = sel.value || 'all';
+    renderStProductTabs();
+    renderSearchTermsBody();
+  });
+  sel.dataset.bound = '1';
+}
+
+function activeSearchTerms() {
+  var periods = STATE.searchTermsPeriods;
+  if (periods && periods[ST_STATE.period]) return periods[ST_STATE.period];
+  return STATE.searchTerms || [];
+}
 
 function renderStProductTabs() {
   var wrap = document.getElementById('stProductTabs');
   if (!wrap) return;
-  var all = STATE.searchTerms || [];
+  var all = activeSearchTerms();
   // 데이터에 등장하는 ASIN 수집
   var asinSet = {};
   all.forEach(function(r){
@@ -1972,6 +2001,7 @@ function bindStFilters() {
 function renderSearchTerms() {
   renderStProductTabs();
   bindStFilters();
+  bindStPeriod();
   renderSearchTermsBody();
 }
 
@@ -1982,7 +2012,7 @@ function renderSearchTermsBody() {
   var ptEl    = document.getElementById('stRecPT');
   if (!negEl || !upEl || !exactEl || !ptEl) return;
 
-  var all = STATE.searchTerms || [];
+  var all = activeSearchTerms();
   // 우선순위: 서치텀 내부 탭 > 상단 광고 ASIN 필터
   var asinFilter = ST_STATE.activeAsin || AD_STATE.asinFilter || '';
   var rows = all.filter(function(r){

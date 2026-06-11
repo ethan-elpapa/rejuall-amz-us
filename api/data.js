@@ -321,8 +321,10 @@ function parseSearchTerms(values) {
   const cellStr = (r, i) => (i < 0 || i >= r.length) ? '' : String(r[i] ?? '').trim();
   const cellNum = (r, i) => (i < 0 || i >= r.length) ? 0  : toNum(r[i]);
 
-  const aggMap = {};
+  // term × portfolio × matchType × week 원장
+  const keyWeekMap = {};
   const weekMap = {};
+  const allWeeks = new Set();
   for (let i = 1; i < values.length; i++) {
     const r = values[i];
     const term = cellStr(r, idx.term);
@@ -331,58 +333,88 @@ function parseSearchTerms(values) {
     const matchType = cellStr(r, idx.matchType);
     const campaign = cellStr(r, idx.campaign);
     const week = cellStr(r, idx.week);
+    if (week) allWeeks.add(week);
     const impressions = cellNum(r, idx.impressions);
     const clicks = cellNum(r, idx.clicks);
     const spend = cellNum(r, idx.spend);
     const sales = cellNum(r, idx.sales);
     const orders = cellNum(r, idx.orders);
 
-    // 1) term × portfolio × matchType 집계
     const key = term + '|' + portfolio + '|' + matchType;
-    if (!aggMap[key]) {
-      aggMap[key] = { term, portfolio, matchType, campaign,
-        impressions: 0, clicks: 0, spend: 0, sales: 0, orders: 0, weeks: {} };
+    if (!keyWeekMap[key]) {
+      keyWeekMap[key] = { meta: { term, portfolio, matchType, campaign }, weeks: {} };
     }
-    const a = aggMap[key];
-    a.impressions += impressions;
-    a.clicks      += clicks;
-    a.spend       += spend;
-    a.sales       += sales;
-    a.orders      += orders;
-    if (week) a.weeks[week] = true;
+    const km = keyWeekMap[key];
+    if (!km.weeks[week]) km.weeks[week] = { i:0, c:0, s:0, sa:0, o:0 };
+    const ww = km.weeks[week];
+    ww.i += impressions; ww.c += clicks; ww.s += spend; ww.sa += sales; ww.o += orders;
 
-    // 2) week × portfolio 집계 (서치텀 트렌드용)
+    // week × portfolio 집계 (트렌드용)
     const wkey = week + '|' + portfolio;
     if (!weekMap[wkey]) {
       weekMap[wkey] = { week, portfolio, impressions: 0, clicks: 0, spend: 0, sales: 0, orders: 0, termCount: 0 };
     }
-    const w = weekMap[wkey];
-    w.impressions += impressions;
-    w.clicks      += clicks;
-    w.spend       += spend;
-    w.sales       += sales;
-    w.orders      += orders;
-    w.termCount   += 1;
+    const wagg = weekMap[wkey];
+    wagg.impressions += impressions;
+    wagg.clicks      += clicks;
+    wagg.spend       += spend;
+    wagg.sales       += sales;
+    wagg.orders      += orders;
+    wagg.termCount   += 1;
   }
 
-  // 파생 지표 계산 + 주차 카운트 평탄화
-  const agg = Object.values(aggMap).map(a => ({
-    term: a.term,
-    portfolio: a.portfolio,
-    matchType: a.matchType,
-    campaign: a.campaign,
-    impressions: a.impressions,
-    clicks: a.clicks,
-    spend: +a.spend.toFixed(2),
-    sales: +a.sales.toFixed(2),
-    orders: a.orders,
-    ctr:  a.impressions > 0 ? a.clicks / a.impressions : 0,
-    cpc:  a.clicks > 0 ? a.spend / a.clicks : 0,
-    cvr:  a.clicks > 0 ? a.orders / a.clicks : 0,
-    acos: a.sales > 0 ? a.spend / a.sales : 0,
-    roas: a.spend > 0 ? a.sales / a.spend : 0,
-    weekCount: Object.keys(a.weeks).length
-  }));
+  // 주차 라벨 정렬 (예: W12-1 < W1-1 < W2-1 ... W4-3)
+  // W12를 0, W1=1, ..., W11=11로 매핑 (현재 데이터 스냅샷 기준)
+  function weekRank(w) {
+    const m = String(w).match(/W(\d+)-(\d+)/);
+    if (!m) return [99, 99];
+    const mo = parseInt(m[1], 10);
+    const sub = parseInt(m[2], 10);
+    return [mo === 12 ? 0 : mo, sub];
+  }
+  const weeksSorted = Array.from(allWeeks).sort((a, b) => {
+    const ra = weekRank(a), rb = weekRank(b);
+    return ra[0] - rb[0] || ra[1] - rb[1];
+  });
+
+  function buildAgg(weekSet /* Set | null = all */) {
+    const out = [];
+    for (const key in keyWeekMap) {
+      const km = keyWeekMap[key];
+      let imp=0, clk=0, sp=0, sa=0, od=0, wc=0;
+      for (const w in km.weeks) {
+        if (weekSet && !weekSet.has(w)) continue;
+        const ww = km.weeks[w];
+        imp += ww.i; clk += ww.c; sp += ww.s; sa += ww.sa; od += ww.o;
+        wc++;
+      }
+      if (imp + clk + sp + sa + od === 0) continue;
+      out.push({
+        term: km.meta.term,
+        portfolio: km.meta.portfolio,
+        matchType: km.meta.matchType,
+        campaign: km.meta.campaign,
+        impressions: imp,
+        clicks: clk,
+        spend: +sp.toFixed(2),
+        sales: +sa.toFixed(2),
+        orders: od,
+        ctr:  imp > 0 ? clk / imp : 0,
+        cpc:  clk > 0 ? sp / clk : 0,
+        cvr:  clk > 0 ? od / clk : 0,
+        acos: sa > 0 ? sp / sa : 0,
+        roas: sp > 0 ? sa / sp : 0,
+        weekCount: wc
+      });
+    }
+    return out;
+  }
+
+  const lastN = n => new Set(weeksSorted.slice(-n));
+  const agg     = buildAgg(null);
+  const last1w  = buildAgg(lastN(1));
+  const last4w  = buildAgg(lastN(4));
+  const last12w = buildAgg(lastN(12));
 
   const byWeek = Object.values(weekMap).map(w => ({
     week: w.week,
@@ -397,7 +429,7 @@ function parseSearchTerms(values) {
     roas: w.spend > 0 ? w.sales / w.spend : 0
   }));
 
-  return { agg, byWeek };
+  return { agg, byWeek, periods: { all: agg, last1w, last4w, last12w }, weeksSorted };
 }
 
 function parseGoalSheet(values) {
@@ -516,6 +548,8 @@ module.exports = async (req, res) => {
       adRows,
       searchTerms: stParsed.agg,
       searchTermsWeekly: stParsed.byWeek,
+      searchTermsPeriods: stParsed.periods,
+      searchTermsWeeks: stParsed.weeksSorted,
       updatedAt: new Date().toISOString(),
       diag: {
         rawSheet: rawSheet ? rawSheet.title : null,
