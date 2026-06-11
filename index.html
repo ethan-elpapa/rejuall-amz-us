@@ -863,10 +863,111 @@
   <!-- ════════════ Ads 뷰 ════════════ -->
   <div id="view-ads" class="view-section" style="display:none">
     <div class="section-header" style="font-size:18px;margin-top:0">광고 대시보드</div>
-    <div class="card" style="padding:40px;text-align:center;color:#94a3b8">
-      <div style="font-size:48px;margin-bottom:16px">📣</div>
-      <div style="font-size:18px;color:#e2e8f0;margin-bottom:8px">광고 대시보드</div>
-      <div>광고 데이터 연동 준비 중입니다.</div>
+
+    <!-- 광고 KPI -->
+    <div class="grid-4" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-title">총 광고비 (Spend)</div>
+        <div class="kpi-value" id="adKpiSpend" style="color:#f87171">—</div>
+        <div class="kpi-sub" id="adKpiCpc">CPC: —</div>
+      </div>
+      <div class="card">
+        <div class="card-title">광고 매출 (Sales)</div>
+        <div class="kpi-value blue" id="adKpiSales">—</div>
+        <div class="kpi-sub" id="adKpiOrders">— 주문</div>
+      </div>
+      <div class="card">
+        <div class="card-title">ACOS</div>
+        <div class="kpi-value yellow" id="adKpiAcos">—</div>
+        <div class="kpi-sub" id="adKpiRoas">ROAS: —</div>
+      </div>
+      <div class="card">
+        <div class="card-title">CTR / CVR</div>
+        <div class="kpi-value green" id="adKpiCtr">—</div>
+        <div class="kpi-sub" id="adKpiCvr">CVR: —</div>
+      </div>
+    </div>
+
+    <!-- 주차별 트렌드 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">
+        주차별 광고 트렌드
+        <div class="toggle-row" style="margin:0">
+          <button class="toggle-btn active" data-ad-metric="spend">광고비</button>
+          <button class="toggle-btn" data-ad-metric="sales">매출</button>
+          <button class="toggle-btn" data-ad-metric="acos">ACOS</button>
+          <button class="toggle-btn" data-ad-metric="roas">ROAS</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:280px">
+        <canvas id="chartAdWeekly"></canvas>
+      </div>
+    </div>
+
+    <!-- 포트폴리오별 -->
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-title">포트폴리오별 성과</div>
+        <div style="overflow-x:auto">
+          <table class="wow-table" id="adPortfolioTable">
+            <thead>
+              <tr>
+                <th>포트폴리오</th>
+                <th>광고비</th>
+                <th>매출</th>
+                <th>ACOS</th>
+                <th>ROAS</th>
+                <th>주문</th>
+              </tr>
+            </thead>
+            <tbody id="adPortfolioBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">포트폴리오별 광고비 비중</div>
+        <div class="chart-wrap" style="height:280px">
+          <canvas id="chartAdPortfolioDonut"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- 포트폴리오 × 주차 라인 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">
+        포트폴리오별 주차 추세
+        <div class="toggle-row" style="margin:0">
+          <button class="toggle-btn active" data-ad-pmetric="spend">광고비</button>
+          <button class="toggle-btn" data-ad-pmetric="sales">매출</button>
+          <button class="toggle-btn" data-ad-pmetric="acos">ACOS</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:320px">
+        <canvas id="chartAdPortfolioWeekly"></canvas>
+      </div>
+    </div>
+
+    <!-- 서치텀 분석 (placeholder) -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">서치텀 분석 &amp; 대안</div>
+      <div style="padding:20px;color:#94a3b8;font-size:13px;line-height:1.7">
+        <div style="color:#fbbf24;font-weight:600;margin-bottom:10px">⚠️ 서치텀 데이터 미연동</div>
+        <div style="margin-bottom:8px"><strong style="color:#e2e8f0">필요 데이터 (택1):</strong></div>
+        <ul style="margin:0 0 12px 18px">
+          <li>Amazon Ads Console → Reports → <strong>Search Term Report</strong> (CSV/XLSX)</li>
+          <li>또는 Bulk Operations → <strong>Bulk Sheet</strong> (Sponsored Products / Brands / Display)</li>
+          <li>또는 Google Sheet 탭으로 연동 (예: <code>SearchTerm_RAW</code>)</li>
+        </ul>
+        <div style="margin-bottom:8px"><strong style="color:#e2e8f0">분석 후 제공할 인사이트:</strong></div>
+        <ul style="margin:0 0 12px 18px">
+          <li>High-Spend / Low-CVR 키워드 → <strong style="color:#f87171">Negative KW 후보</strong></li>
+          <li>High-CVR / Low-Bid 키워드 → <strong style="color:#34d399">입찰 증액 후보</strong></li>
+          <li>Conversion-only KW → <strong style="color:#60a5fa">Exact Match 신규 캠페인 후보</strong></li>
+          <li>Brand vs Generic vs Competitor 분리 분석</li>
+          <li>ACOS &gt; 목표치 / 클릭 N회 이상 무전환 자동 플래깅</li>
+        </ul>
+        <div style="margin-top:14px;color:#64748b">데이터 소스를 알려주시면 자동 분석 + 액션 리스트 형태로 구현해드립니다.</div>
+      </div>
     </div>
   </div>
 
@@ -1142,7 +1243,20 @@ var STATE = {
 // ═══════════════════════════════════════════════════════
 //  BOOT — Vercel Serverless API (/api/data) 호출
 // ═══════════════════════════════════════════════════════
+// 광고 데이터 (정적 JSON)
+function loadAdData() {
+  fetch('ad_data.json')
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if (!d) return;
+      STATE.adData = d;
+      renderAdsView();
+    })
+    .catch(function(){});
+}
+
 window.onload = function () {
+  loadAdData();
   // Apps Script 내장 호스팅에서 열렸으면 google.script.run 사용 (호환성)
   if (typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run
@@ -1210,6 +1324,7 @@ function onDataLoaded(resp) {
   buildProductDropdown();
   bindControls();
   bindSidebar();
+  bindAdToggles();
   bindGoalInput();
 
   // 옵션 생성 후 select 값 설정
@@ -1554,6 +1669,231 @@ function eventForDate(yyyymmdd) {
 }
 
 // ── Monthly Calendar ──────────────────────────────────
+// ═══════════════════════════════════════════════════════
+//  광고 대시보드
+// ═══════════════════════════════════════════════════════
+var AD_STATE = { weeklyMetric: 'spend', portfolioMetric: 'spend' };
+var AD_COLORS = ['#a78bfa','#60a5fa','#34d399','#fbbf24','#f472b6','#f87171','#06b6d4','#f97316','#a3e635','#8b5cf6'];
+
+function isoWeek(dateStr) {
+  // YYYY-MM-DD → YYYY-Www (ISO week)
+  var d = new Date(dateStr + 'T00:00:00Z');
+  if (isNaN(d.getTime())) return dateStr;
+  var dn = (d.getUTCDay() + 6) % 7; // 월=0
+  d.setUTCDate(d.getUTCDate() - dn + 3);
+  var firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  var weekNum = 1 + Math.round(((d - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+  return d.getUTCFullYear() + '-W' + ('0' + weekNum).slice(-2);
+}
+
+function renderAdsView() {
+  var d = STATE.adData;
+  if (!d) return;
+  renderAdKpis(d);
+  renderAdWeekly(d);
+  renderAdPortfolio(d);
+  renderAdPortfolioWeekly(d);
+}
+
+function renderAdKpis(d) {
+  var k = d.kpi || {};
+  var set = function(id, v){ var el = document.getElementById(id); if (el) el.innerHTML = v; };
+  set('adKpiSpend',  fmt$(k.spend || 0));
+  set('adKpiCpc',    'CPC: $' + (k.cpc || 0).toFixed(2));
+  set('adKpiSales',  fmt$(k.sales || 0));
+  set('adKpiOrders', fmtN(k.orders || 0) + ' 주문');
+  set('adKpiAcos',   ((k.acos || 0) * 100).toFixed(1) + '%');
+  set('adKpiRoas',   'ROAS: ' + (k.roas || 0).toFixed(2) + 'x');
+  set('adKpiCtr',    'CTR: ' + ((k.ctr || 0) * 100).toFixed(2) + '%');
+  set('adKpiCvr',    'CVR: ' + ((k.cvr || 0) * 100).toFixed(2) + '%');
+}
+
+function aggregateAdWeekly(daily) {
+  var map = {};
+  daily.forEach(function(r){
+    var w = isoWeek(r.date);
+    if (!map[w]) map[w] = { week: w, spend:0, sales:0, impressions:0, clicks:0, orders:0 };
+    map[w].spend       += r.spend       || 0;
+    map[w].sales       += r.sales       || 0;
+    map[w].impressions += r.impressions || 0;
+    map[w].clicks      += r.clicks      || 0;
+    map[w].orders      += r.orders      || 0;
+  });
+  return Object.values(map).sort(function(a,b){ return a.week < b.week ? -1 : 1; }).map(function(w){
+    w.acos = w.sales > 0 ? w.spend / w.sales : 0;
+    w.roas = w.spend > 0 ? w.sales / w.spend : 0;
+    return w;
+  });
+}
+
+function renderAdWeekly(d) {
+  var weekly = aggregateAdWeekly(d.daily || []);
+  var metric = AD_STATE.weeklyMetric;
+  var labels = weekly.map(function(w){ return w.week; });
+  var values = weekly.map(function(w){ return w[metric]; });
+  var meta = {
+    spend: { label: '광고비 ($)', color: '#f87171', fmt: fmt$ },
+    sales: { label: '매출 ($)',   color: '#60a5fa', fmt: fmt$ },
+    acos:  { label: 'ACOS (%)',   color: '#fbbf24', fmt: function(v){ return (v*100).toFixed(1)+'%'; } },
+    roas:  { label: 'ROAS (x)',   color: '#34d399', fmt: function(v){ return v.toFixed(2)+'x'; } }
+  }[metric];
+  if (STATE.charts.adWeekly) STATE.charts.adWeekly.destroy();
+  STATE.charts.adWeekly = new Chart(document.getElementById('chartAdWeekly').getContext('2d'), {
+    type: 'line',
+    data: { labels: labels, datasets: [{
+      label: meta.label, data: values, borderColor: meta.color,
+      backgroundColor: meta.color + '22', borderWidth: 2.5, tension: 0.35, fill: true, pointRadius: 3
+    }]},
+    options: chartDefaults({
+      scales: { x: xAxisStyle(), y: { ...yAxisStyle(), ticks: { color: '#8b9ab2', callback: meta.fmt } } },
+      plugins: { legend: legendStyle(), tooltip: { callbacks: { label: function(c){ return meta.fmt(c.parsed.y); }}}}
+    })
+  });
+}
+
+function aggByPortfolio(campaignDaily) {
+  var map = {};
+  campaignDaily.forEach(function(r){
+    var p = r.portfolio || r.campaign || 'Unknown';
+    if (!map[p]) map[p] = { portfolio: p, spend:0, sales:0, clicks:0, orders:0, impressions:0 };
+    map[p].spend       += r.spend       || 0;
+    map[p].sales       += r.sales       || 0;
+    map[p].clicks      += r.clicks      || 0;
+    map[p].orders      += r.orders      || 0;
+    map[p].impressions += r.impressions || 0;
+  });
+  return Object.values(map).map(function(p){
+    p.acos = p.sales > 0 ? p.spend / p.sales : 0;
+    p.roas = p.spend > 0 ? p.sales / p.spend : 0;
+    return p;
+  }).sort(function(a,b){ return b.spend - a.spend; });
+}
+
+function renderAdPortfolio(d) {
+  var rows = aggByPortfolio(d.campaignDaily || []);
+  var tbody = document.getElementById('adPortfolioBody');
+  if (tbody) {
+    tbody.innerHTML = rows.map(function(p, i){
+      var color = AD_COLORS[i % AD_COLORS.length];
+      var acosColor = p.acos > 0.5 ? '#f87171' : (p.acos > 0.3 ? '#fbbf24' : '#34d399');
+      return '<tr>' +
+        '<td><span style="display:inline-block;width:8px;height:8px;background:' + color + ';border-radius:50%;margin-right:6px"></span>' + p.portfolio + '</td>' +
+        '<td>' + fmt$(p.spend) + '</td>' +
+        '<td>' + fmt$(p.sales) + '</td>' +
+        '<td style="color:' + acosColor + ';font-weight:600">' + (p.acos*100).toFixed(1) + '%</td>' +
+        '<td>' + p.roas.toFixed(2) + 'x</td>' +
+        '<td>' + fmtN(p.orders) + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+  // Donut
+  if (STATE.charts.adPortfolioDonut) STATE.charts.adPortfolioDonut.destroy();
+  var ctx = document.getElementById('chartAdPortfolioDonut');
+  if (ctx) {
+    STATE.charts.adPortfolioDonut = new Chart(ctx.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: rows.map(function(p){ return p.portfolio; }),
+        datasets: [{
+          data: rows.map(function(p){ return p.spend; }),
+          backgroundColor: rows.map(function(_, i){ return AD_COLORS[i % AD_COLORS.length] + 'cc'; }),
+          borderColor: '#0f1626', borderWidth: 2, hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '55%',
+        plugins: {
+          legend: { position: 'right', labels: { color: '#cbd5e1', boxWidth: 12, padding: 8, font: { size: 11 } } },
+          tooltip: { callbacks: { label: function(c){
+            var total = c.dataset.data.reduce(function(s,v){return s+v;},0) || 1;
+            return c.label + ': ' + fmt$(c.parsed) + ' (' + (c.parsed/total*100).toFixed(1) + '%)';
+          }}}
+        }
+      }
+    });
+  }
+}
+
+function aggPortfolioWeekly(campaignDaily) {
+  var map = {};
+  campaignDaily.forEach(function(r){
+    var p = r.portfolio || r.campaign || 'Unknown';
+    var w = isoWeek(r.date);
+    if (!map[p]) map[p] = {};
+    if (!map[p][w]) map[p][w] = { spend:0, sales:0, orders:0 };
+    map[p][w].spend  += r.spend  || 0;
+    map[p][w].sales  += r.sales  || 0;
+    map[p][w].orders += r.orders || 0;
+  });
+  return map;
+}
+
+function renderAdPortfolioWeekly(d) {
+  var m = aggPortfolioWeekly(d.campaignDaily || []);
+  var weeksSet = {};
+  Object.keys(m).forEach(function(p){ Object.keys(m[p]).forEach(function(w){ weeksSet[w] = true; }); });
+  var weeks = Object.keys(weeksSet).sort();
+  var metric = AD_STATE.portfolioMetric;
+
+  // 광고비 합 내림차순으로 포트폴리오 정렬
+  var portfolios = Object.keys(m).sort(function(a,b){
+    var sa = 0, sb = 0;
+    Object.values(m[a]).forEach(function(v){ sa += v.spend; });
+    Object.values(m[b]).forEach(function(v){ sb += v.spend; });
+    return sb - sa;
+  });
+
+  var datasets = portfolios.map(function(p, i){
+    var color = AD_COLORS[i % AD_COLORS.length];
+    return {
+      label: p,
+      data: weeks.map(function(w){
+        var v = m[p][w]; if (!v) return 0;
+        if (metric === 'acos') return v.sales > 0 ? v.spend / v.sales : 0;
+        return v[metric] || 0;
+      }),
+      borderColor: color, backgroundColor: color + '22',
+      borderWidth: 2, tension: 0.3, fill: false, pointRadius: 2, pointHoverRadius: 5
+    };
+  });
+
+  var fmtFn = metric === 'acos'
+    ? function(v){ return (v*100).toFixed(1)+'%'; }
+    : function(v){ return fmt$(v); };
+
+  if (STATE.charts.adPortfolioWeekly) STATE.charts.adPortfolioWeekly.destroy();
+  STATE.charts.adPortfolioWeekly = new Chart(document.getElementById('chartAdPortfolioWeekly').getContext('2d'), {
+    type: 'line',
+    data: { labels: weeks, datasets: datasets },
+    options: chartDefaults({
+      scales: { x: xAxisStyle(), y: { ...yAxisStyle(), ticks: { color: '#8b9ab2', callback: fmtFn } } },
+      plugins: { legend: legendStyle(), tooltip: { callbacks: { label: function(c){ return c.dataset.label + ': ' + fmtFn(c.parsed.y); }}}}
+    })
+  });
+}
+
+// 광고 토글 바인딩
+function bindAdToggles() {
+  document.querySelectorAll('[data-ad-metric]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      AD_STATE.weeklyMetric = this.getAttribute('data-ad-metric');
+      var siblings = this.parentElement.querySelectorAll('.toggle-btn');
+      siblings.forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      if (STATE.adData) renderAdWeekly(STATE.adData);
+    });
+  });
+  document.querySelectorAll('[data-ad-pmetric]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      AD_STATE.portfolioMetric = this.getAttribute('data-ad-pmetric');
+      var siblings = this.parentElement.querySelectorAll('.toggle-btn');
+      siblings.forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      if (STATE.adData) renderAdPortfolioWeekly(STATE.adData);
+    });
+  });
+}
+
 function renderCalendar() {
   var grid = document.getElementById('calGrid');
   var title = document.getElementById('calTitle');
