@@ -904,6 +904,31 @@
       </div>
     </div>
 
+    <!-- 주차별 상세 테이블 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">주차별 광고 지표 상세</div>
+      <div style="overflow-x:auto">
+        <table class="wow-table" id="adWeeklyTable">
+          <thead>
+            <tr>
+              <th>주차</th>
+              <th>노출</th>
+              <th>클릭</th>
+              <th>CTR</th>
+              <th>CPC</th>
+              <th>광고비</th>
+              <th>주문</th>
+              <th>광고 매출</th>
+              <th>CVR</th>
+              <th>ACOS</th>
+              <th>ROAS</th>
+            </tr>
+          </thead>
+          <tbody id="adWeeklyBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- 포트폴리오별 -->
     <div class="grid-2" style="margin-bottom:20px">
       <div class="card">
@@ -1772,8 +1797,44 @@ function aggregateAdWeekly(rows) {
   });
 }
 
+function renderAdWeeklyTable(weekly) {
+  var tbody = document.getElementById('adWeeklyBody');
+  if (!tbody) return;
+  // 최신 주차가 위로 오도록 역순
+  var rows = weekly.slice().reverse();
+  tbody.innerHTML = rows.map(function(w, idx){
+    var ctr = w.impressions > 0 ? w.clicks / w.impressions : 0;
+    var cpc = w.clicks > 0 ? w.spend / w.clicks : 0;
+    var cvr = w.clicks > 0 ? w.orders / w.clicks : 0;
+    var acosColor = w.acos > 0.5 ? '#f87171' : (w.acos > 0.3 ? '#fbbf24' : '#34d399');
+    var roasColor = w.roas >= 3 ? '#34d399' : (w.roas >= 2 ? '#fbbf24' : '#f87171');
+    // WoW 매출 변화율 (이전 주 대비)
+    var prev = rows[idx + 1];
+    var wow = '';
+    if (prev && prev.sales > 0) {
+      var d = (w.sales - prev.sales) / prev.sales;
+      var c = d >= 0 ? '#34d399' : '#f87171';
+      wow = ' <span style="color:' + c + ';font-size:10px">(' + (d>=0?'+':'') + (d*100).toFixed(1) + '%)</span>';
+    }
+    return '<tr>' +
+      '<td style="font-weight:600">' + w.week + '</td>' +
+      '<td>' + fmtN(w.impressions) + '</td>' +
+      '<td>' + fmtN(w.clicks) + '</td>' +
+      '<td>' + (ctr*100).toFixed(2) + '%</td>' +
+      '<td>' + fmt$(cpc) + '</td>' +
+      '<td style="color:#f87171">' + fmt$(w.spend) + '</td>' +
+      '<td>' + fmtN(w.orders) + '</td>' +
+      '<td style="color:#60a5fa">' + fmt$(w.sales) + wow + '</td>' +
+      '<td>' + (cvr*100).toFixed(2) + '%</td>' +
+      '<td style="color:' + acosColor + ';font-weight:600">' + (w.acos*100).toFixed(1) + '%</td>' +
+      '<td style="color:' + roasColor + ';font-weight:600">' + w.roas.toFixed(2) + 'x</td>' +
+    '</tr>';
+  }).join('');
+}
+
 function renderAdWeekly(rows) {
   var weekly = aggregateAdWeekly(rows);
+  renderAdWeeklyTable(weekly);
   var metric = AD_STATE.weeklyMetric;
   var labels = weekly.map(function(w){ return w.week; });
   var values = weekly.map(function(w){ return w[metric]; });
