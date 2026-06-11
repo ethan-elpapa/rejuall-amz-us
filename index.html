@@ -899,6 +899,9 @@
           <select id="adMonthFilter" class="filter-select" style="min-width:90px;padding:4px 8px;font-size:12px">
             <option value="">전체 월</option>
           </select>
+          <select id="adWeekFilter" class="filter-select" style="min-width:100px;padding:4px 8px;font-size:12px">
+            <option value="">전체 주차</option>
+          </select>
           <select id="adAsinFilter" class="filter-select" style="min-width:200px;padding:4px 8px;font-size:12px">
             <option value="">전체 제품</option>
           </select>
@@ -943,7 +946,10 @@
     <!-- 포트폴리오별 -->
     <div class="grid-2" style="margin-bottom:20px">
       <div class="card">
-        <div class="card-title">포트폴리오별 성과</div>
+        <div class="card-title">
+          포트폴리오별 성과
+          <span id="adPortfolioScope" style="font-size:11px;color:#94a3b8;font-weight:400;margin-left:8px"></span>
+        </div>
         <div style="overflow-x:auto">
           <table class="wow-table" id="adPortfolioTable">
             <thead>
@@ -1746,7 +1752,7 @@ function eventForDate(yyyymmdd) {
 // ═══════════════════════════════════════════════════════
 // 광고 데이터 시작일 (이전 구간은 포트폴리오 미설정으로 데이터 신뢰도 낮음)
 var AD_DATA_START = '2025-10-18';
-var AD_STATE = { weeklyMetric: 'spend', portfolioMetric: 'spend', asinFilter: '', year: '', month: '' };
+var AD_STATE = { weeklyMetric: 'spend', portfolioMetric: 'spend', asinFilter: '', year: '', month: '', week: '' };
 var AD_COLORS = ['#a78bfa','#60a5fa','#34d399','#fbbf24','#f472b6','#f87171','#06b6d4','#f97316','#a3e635','#8b5cf6'];
 
 function isoWeek(dateStr) {
@@ -1785,11 +1791,34 @@ function cleanAdRows() {
   });
 }
 
+function refreshAdWeekOptions() {
+  // 연도+월 필터를 반영해 주차 옵션 재구성
+  var weekSel = document.getElementById('adWeekFilter');
+  if (!weekSel) return;
+  var rows = cleanAdRows().filter(function(r){
+    if (AD_STATE.year  && r.date.slice(0, 4) !== AD_STATE.year)  return false;
+    if (AD_STATE.month && r.date.slice(5, 7) !== AD_STATE.month) return false;
+    return true;
+  });
+  var weekSet = {};
+  rows.forEach(function(r){ var w = mmWeek(r.date); if (w) weekSet[w] = true; });
+  var weeks = Object.keys(weekSet).sort();
+  var prev = AD_STATE.week;
+  weekSel.innerHTML = '<option value="">전체 주차</option>' +
+    weeks.map(function(w){ return '<option value="'+w+'">'+w+'</option>'; }).join('');
+  if (prev && weeks.indexOf(prev) > -1) weekSel.value = prev;
+  else AD_STATE.week = '';
+}
+
 function populateAdFilters() {
   var asinSel  = document.getElementById('adAsinFilter');
   var yearSel  = document.getElementById('adYearFilter');
   var monthSel = document.getElementById('adMonthFilter');
-  if (!asinSel || asinSel.dataset.populated === '1') return;
+  var weekSel  = document.getElementById('adWeekFilter');
+  if (!asinSel || asinSel.dataset.populated === '1') {
+    refreshAdWeekOptions();
+    return;
+  }
   var rows = cleanAdRows();
   var asinSet = {}, yearSet = {}, monthSet = {};
   rows.forEach(function(r){
@@ -1823,13 +1852,22 @@ function populateAdFilters() {
   });
   yearSel.addEventListener('change', function(){
     AD_STATE.year = yearSel.value || '';
+    refreshAdWeekOptions();
     renderAdsView();
   });
   monthSel.addEventListener('change', function(){
     AD_STATE.month = monthSel.value || '';
+    refreshAdWeekOptions();
     renderAdsView();
   });
+  if (weekSel) {
+    weekSel.addEventListener('change', function(){
+      AD_STATE.week = weekSel.value || '';
+      renderAdsView();
+    });
+  }
   asinSel.dataset.populated = '1';
+  refreshAdWeekOptions();
 }
 
 function filteredAdRows() {
@@ -1838,6 +1876,7 @@ function filteredAdRows() {
     if (AD_STATE.asinFilter && r.asin !== AD_STATE.asinFilter) return false;
     if (AD_STATE.year  && r.date.slice(0, 4) !== AD_STATE.year)  return false;
     if (AD_STATE.month && r.date.slice(5, 7) !== AD_STATE.month) return false;
+    if (AD_STATE.week  && mmWeek(r.date) !== AD_STATE.week)      return false;
     return true;
   });
 }
@@ -1975,6 +2014,19 @@ function aggByPortfolio(campaignDaily) {
 }
 
 function renderAdPortfolio(adRows) {
+  // 현재 필터 상태를 부제목으로 노출
+  var scopeEl = document.getElementById('adPortfolioScope');
+  if (scopeEl) {
+    var bits = [];
+    if (AD_STATE.year)  bits.push(AD_STATE.year + '년');
+    if (AD_STATE.month) bits.push(parseInt(AD_STATE.month,10) + '월');
+    if (AD_STATE.week)  bits.push(AD_STATE.week + '주');
+    if (AD_STATE.asinFilter) {
+      var nm = (STATE.productMap || {})[AD_STATE.asinFilter] || AD_STATE.asinFilter;
+      bits.push(nm);
+    }
+    scopeEl.textContent = bits.length ? '· ' + bits.join(' / ') : '· 전체';
+  }
   var rows = aggByPortfolio(adRows);
   var tbody = document.getElementById('adPortfolioBody');
   if (tbody) {
