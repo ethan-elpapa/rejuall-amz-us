@@ -892,7 +892,13 @@
     <div class="card" style="margin-bottom:20px">
       <div class="card-title">
         주차별 광고 트렌드
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="adYearFilter" class="filter-select" style="min-width:90px;padding:4px 8px;font-size:12px">
+            <option value="">전체 연도</option>
+          </select>
+          <select id="adMonthFilter" class="filter-select" style="min-width:90px;padding:4px 8px;font-size:12px">
+            <option value="">전체 월</option>
+          </select>
           <select id="adAsinFilter" class="filter-select" style="min-width:200px;padding:4px 8px;font-size:12px">
             <option value="">전체 제품</option>
           </select>
@@ -1738,7 +1744,9 @@ function eventForDate(yyyymmdd) {
 // ═══════════════════════════════════════════════════════
 //  광고 대시보드
 // ═══════════════════════════════════════════════════════
-var AD_STATE = { weeklyMetric: 'spend', portfolioMetric: 'spend', asinFilter: '' };
+// 광고 데이터 시작일 (이전 구간은 포트폴리오 미설정으로 데이터 신뢰도 낮음)
+var AD_DATA_START = '2025-10-18';
+var AD_STATE = { weeklyMetric: 'spend', portfolioMetric: 'spend', asinFilter: '', year: '', month: '' };
 var AD_COLORS = ['#a78bfa','#60a5fa','#34d399','#fbbf24','#f472b6','#f87171','#06b6d4','#f97316','#a3e635','#8b5cf6'];
 
 function isoWeek(dateStr) {
@@ -1766,38 +1774,78 @@ function mmWeek(dateStr) {
   return mm + '-' + w;
 }
 
-function populateAdAsinFilter() {
-  var sel = document.getElementById('adAsinFilter');
-  if (!sel || sel.dataset.populated === '1') return;
+function cleanAdRows() {
+  // 포트폴리오가 정착된 AD_DATA_START 이후만 사용 (이전은 신뢰도 낮음)
   var rows = STATE.adRows || [];
-  var asinSet = {};
-  rows.forEach(function(r){ if (r.asin) asinSet[r.asin] = true; });
-  var asins = Object.keys(asinSet).sort();
+  return rows.filter(function(r){
+    if (!r.date) return false;
+    if (r.date < AD_DATA_START) return false;
+    if (!r.portfolio) return false;
+    return true;
+  });
+}
+
+function populateAdFilters() {
+  var asinSel  = document.getElementById('adAsinFilter');
+  var yearSel  = document.getElementById('adYearFilter');
+  var monthSel = document.getElementById('adMonthFilter');
+  if (!asinSel || asinSel.dataset.populated === '1') return;
+  var rows = cleanAdRows();
+  var asinSet = {}, yearSet = {}, monthSet = {};
+  rows.forEach(function(r){
+    if (r.asin) asinSet[r.asin] = true;
+    if (r.date && r.date.length >= 7) {
+      yearSet[r.date.slice(0, 4)] = true;
+      monthSet[r.date.slice(5, 7)] = true;
+    }
+  });
   var pmap = STATE.productMap || {};
-  asins.forEach(function(a){
+  Object.keys(asinSet).sort().forEach(function(a){
     var opt = document.createElement('option');
     opt.value = a;
     var nm = pmap[a];
     opt.textContent = nm ? (nm + ' (' + a + ')') : a;
-    sel.appendChild(opt);
+    asinSel.appendChild(opt);
   });
-  sel.addEventListener('change', function(){
-    AD_STATE.asinFilter = sel.value || '';
+  Object.keys(yearSet).sort().forEach(function(y){
+    var opt = document.createElement('option');
+    opt.value = y; opt.textContent = y + '년';
+    yearSel.appendChild(opt);
+  });
+  Object.keys(monthSet).sort().forEach(function(m){
+    var opt = document.createElement('option');
+    opt.value = m; opt.textContent = parseInt(m, 10) + '월';
+    monthSel.appendChild(opt);
+  });
+  asinSel.addEventListener('change', function(){
+    AD_STATE.asinFilter = asinSel.value || '';
     renderAdsView();
   });
-  sel.dataset.populated = '1';
+  yearSel.addEventListener('change', function(){
+    AD_STATE.year = yearSel.value || '';
+    renderAdsView();
+  });
+  monthSel.addEventListener('change', function(){
+    AD_STATE.month = monthSel.value || '';
+    renderAdsView();
+  });
+  asinSel.dataset.populated = '1';
 }
 
 function filteredAdRows() {
-  var rows = STATE.adRows || [];
-  if (!AD_STATE.asinFilter) return rows;
-  return rows.filter(function(r){ return r.asin === AD_STATE.asinFilter; });
+  var rows = cleanAdRows();
+  return rows.filter(function(r){
+    if (AD_STATE.asinFilter && r.asin !== AD_STATE.asinFilter) return false;
+    if (AD_STATE.year  && r.date.slice(0, 4) !== AD_STATE.year)  return false;
+    if (AD_STATE.month && r.date.slice(5, 7) !== AD_STATE.month) return false;
+    return true;
+  });
 }
 
 function renderAdsView() {
   var all = STATE.adRows || [];
   if (!all.length) return;
-  populateAdAsinFilter();
+  populateAdFilters();
   var rows = filteredAdRows();
   renderAdKpis(rows);
   renderAdWeekly(rows);

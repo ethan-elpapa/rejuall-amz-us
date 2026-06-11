@@ -7,10 +7,10 @@ const { google } = require('googleapis');
 const SPREADSHEET_ID = '10d21g2iUkqb2uRVEw9ZCSQgmOAqKVyuIiOSNBozl1ok';
 
 const PRODUCT_NAMES = {
-  'B0FGDR67R5': 'PDRN Cream (구)',
-  'B0FN7LDTB7': 'PDRN Cream Max',
-  'B0FPDWZ5X2': 'Ceramide Cream',
-  'B0FP4WJXD5': 'Retino-Mela Serum',
+  'B0FGDR67R5': 'PDRN 20ml (구)',
+  'B0FN7LDTB7': 'PDRN MAX',
+  'B0FPDWZ5X2': '세라마이드',
+  'B0FP4WJXD5': '레티노멜라',
   'B0FN7L65C1': 'PDRN Cream',
   'B0GL22N4GY': 'PDRN Lip Serum',
   'B0GL26G5G2': 'PDRN Mask',
@@ -495,10 +495,10 @@ module.exports = async (req, res) => {
     const adRows       = adRawSheet  ? parseAdRaw(allValues[adRawSheet.title]) : [];
     const stParsed     = stSheet     ? parseSearchTerms(allValues[stSheet.title]) : { agg: [], byWeek: [] };
 
-    // 폴백: ASIN-INFO 비어있으면 PRODUCT_NAMES 사용
-    if (productInfo.knownAsins.length === 0) {
-      for (const asin of Object.keys(PRODUCT_NAMES)) {
-        productInfo.map[asin] = PRODUCT_NAMES[asin];
+    // PRODUCT_NAMES 우선 적용 (시트 값보다 우선)
+    for (const asin of Object.keys(PRODUCT_NAMES)) {
+      productInfo.map[asin] = PRODUCT_NAMES[asin];
+      if (productInfo.knownAsins.indexOf(asin) === -1) {
         productInfo.knownAsins.push(asin);
       }
     }
