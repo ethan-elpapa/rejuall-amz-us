@@ -1946,6 +1946,7 @@ function bindStPeriod() {
     ST_STATE.period = sel.value || 'all';
     renderStProductTabs();
     renderSearchTermsBody();
+    renderStKeywordResults();
   });
   sel.dataset.bound = '1';
 }
@@ -1988,6 +1989,7 @@ function renderStProductTabs() {
       ST_STATE.activeAsin = btn.getAttribute('data-asin') || '';
       renderStProductTabs();
       renderSearchTermsBody();
+      renderStKeywordResults();
     });
   });
 }
@@ -2045,9 +2047,19 @@ function renderStKeywordResults() {
   // 제품 탭이 활성화면 그쪽 ASIN으로 한정
   var asinFilter = ST_STATE.activeAsin || AD_STATE.asinFilter || '';
 
+  // 기간 필터 — ST_STATE.period에 따라 허용되는 주차 Set 산출
+  var weeksOrderAll = STATE.searchTermsWeeks || [];
+  var allowSet = null;
+  var slice = { last1w: 1, last4w: 4, last12w: 12 }[ST_STATE.period];
+  if (slice) {
+    allowSet = {};
+    weeksOrderAll.slice(-slice).forEach(function(w){ allowSet[w] = true; });
+  }
+
   // 매칭 행
   var matches = data.filter(function(r){
     if (!r.t || !r.t.toLowerCase().includes(q)) return false;
+    if (allowSet && !allowSet[r.w]) return false;
     if (asinFilter) {
       var a = portfolioToAsin(r.p);
       if (a !== asinFilter) return false;
