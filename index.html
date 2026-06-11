@@ -992,8 +992,11 @@
     <!-- 서치텀 분석 -->
     <div class="section-header" style="font-size:16px;margin-top:30px">
       서치텀 추천 액션
-      <span style="font-size:11px;color:#64748b;font-weight:400;margin-left:8px">· 상단 제품 필터에 따라 결과가 바뀝니다</span>
+      <span style="font-size:11px;color:#64748b;font-weight:400;margin-left:8px">· 제품 탭을 선택해서 확인하세요</span>
     </div>
+
+    <!-- 제품 탭 -->
+    <div id="stProductTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0"></div>
 
     <div class="grid-2" style="gap:14px;margin-bottom:20px" id="stRecGrid">
       <!-- 4개 카드: Negative / Bid Up / Exact / Product Target -->
@@ -1881,7 +1884,51 @@ function isAsinLike(term) {
   return /^B0[A-Z0-9]{8}$/i.test(String(term || '').trim());
 }
 
+// 서치텀 섹션 내부 제품 탭 (상단 광고 필터와 별개)
+var ST_STATE = { activeAsin: '' };  // '' = 전체
+
+function renderStProductTabs() {
+  var wrap = document.getElementById('stProductTabs');
+  if (!wrap) return;
+  var all = STATE.searchTerms || [];
+  // 데이터에 등장하는 ASIN 수집
+  var asinSet = {};
+  all.forEach(function(r){
+    var a = portfolioToAsin(r.portfolio);
+    if (a) asinSet[a] = (asinSet[a] || 0) + 1;
+  });
+  var pmap = STATE.productMap || {};
+  // 행 수 기준 정렬
+  var asins = Object.keys(asinSet).sort(function(a,b){ return asinSet[b] - asinSet[a]; });
+
+  var btnStyle = function(active){
+    return 'padding:8px 14px;border:none;background:transparent;cursor:pointer;font-size:13px;' +
+      'font-weight:' + (active ? '700' : '500') + ';' +
+      'color:' + (active ? 'var(--blue)' : 'var(--muted)') + ';' +
+      'border-bottom:2px solid ' + (active ? 'var(--blue)' : 'transparent') + ';margin-bottom:-1px';
+  };
+
+  var html = '<button class="st-prod-tab" data-asin="" style="' + btnStyle(ST_STATE.activeAsin === '') + '">전체</button>';
+  asins.forEach(function(a){
+    var nm = pmap[a] || a;
+    html += '<button class="st-prod-tab" data-asin="' + a + '" style="' + btnStyle(ST_STATE.activeAsin === a) + '">' + escapeHtml(nm) + '</button>';
+  });
+  wrap.innerHTML = html;
+  Array.prototype.forEach.call(wrap.querySelectorAll('.st-prod-tab'), function(btn){
+    btn.addEventListener('click', function(){
+      ST_STATE.activeAsin = btn.getAttribute('data-asin') || '';
+      renderStProductTabs();
+      renderSearchTermsBody();
+    });
+  });
+}
+
 function renderSearchTerms() {
+  renderStProductTabs();
+  renderSearchTermsBody();
+}
+
+function renderSearchTermsBody() {
   var negEl   = document.getElementById('stRecNeg');
   var upEl    = document.getElementById('stRecUp');
   var exactEl = document.getElementById('stRecExact');
@@ -1889,8 +1936,8 @@ function renderSearchTerms() {
   if (!negEl || !upEl || !exactEl || !ptEl) return;
 
   var all = STATE.searchTerms || [];
-  // ASIN 필터 적용 (포트폴리오 이름에서 ASIN 추출하여 매칭)
-  var asinFilter = AD_STATE.asinFilter || '';
+  // 우선순위: 서치텀 내부 탭 > 상단 광고 ASIN 필터
+  var asinFilter = ST_STATE.activeAsin || AD_STATE.asinFilter || '';
   var rows = all.filter(function(r){
     if (!r.term || !r.portfolio) return false;
     if (!asinFilter) return true;
