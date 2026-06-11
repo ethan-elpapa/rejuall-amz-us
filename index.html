@@ -999,28 +999,56 @@
     <div id="stProductTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0"></div>
 
     <div class="grid-2" style="gap:14px;margin-bottom:20px" id="stRecGrid">
-      <!-- 4개 카드: Negative / Bid Up / Exact / Product Target -->
+      <!-- 🔴 Negative -->
       <div class="card" style="padding:16px">
         <div style="color:#f87171;font-weight:700;font-size:13px;margin-bottom:4px">🔴 Negative 추가 추천</div>
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:10px">광고비는 쓰는데 주문이 없는 키워드</div>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:10px">광고비는 쓰는데 효율 안 나오는 키워드 (ACOS 높거나 매출 0)</div>
+        <div class="st-filter-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:11px;color:#94a3b8">
+          <label>최소 Spend $<input type="number" id="stfNegSpend"  value="15"  min="0" step="5"  class="st-fnum"></label>
+          <label>최소 클릭 <input type="number" id="stfNegClicks" value="10"  min="0" step="1"  class="st-fnum"></label>
+          <label>최소 ACOS <input type="number" id="stfNegAcos"   value="80"  min="0" step="5"  class="st-fnum">%</label>
+        </div>
         <div id="stRecNeg" style="font-size:12.5px;line-height:1.6"></div>
       </div>
+      <!-- 🟢 Bid Up -->
       <div class="card" style="padding:16px">
         <div style="color:#34d399;font-weight:700;font-size:13px;margin-bottom:4px">🟢 입찰 증액 추천</div>
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:10px">ACOS 낮고 효율 좋은 키워드 (예산 키울 만함)</div>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:10px">ACOS 낮고 주문 검증된 키워드 (예산 키울 만함)</div>
+        <div class="st-filter-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:11px;color:#94a3b8">
+          <label>최대 ACOS <input type="number" id="stfUpAcos"   value="30" min="0" step="5" class="st-fnum">%</label>
+          <label>최소 주문 <input type="number" id="stfUpOrders" value="3"  min="0" step="1" class="st-fnum"></label>
+          <label>최소 클릭 <input type="number" id="stfUpClicks" value="10" min="0" step="1" class="st-fnum"></label>
+        </div>
         <div id="stRecUp" style="font-size:12.5px;line-height:1.6"></div>
       </div>
+      <!-- 🔵 Exact -->
       <div class="card" style="padding:16px">
         <div style="color:#60a5fa;font-weight:700;font-size:13px;margin-bottom:4px">🔵 Exact Match 분리 추천</div>
         <div style="font-size:11px;color:#94a3b8;margin-bottom:10px">주문이 검증된 키워드는 Exact로 별도 캠페인</div>
+        <div class="st-filter-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:11px;color:#94a3b8">
+          <label>최소 주문 <input type="number" id="stfExOrders" value="3"  min="0" step="1" class="st-fnum"></label>
+          <label>최대 ACOS <input type="number" id="stfExAcos"   value="50" min="0" step="5" class="st-fnum">%</label>
+        </div>
         <div id="stRecExact" style="font-size:12.5px;line-height:1.6"></div>
       </div>
+      <!-- 🟣 PT -->
       <div class="card" style="padding:16px">
         <div style="color:#a78bfa;font-weight:700;font-size:13px;margin-bottom:4px">🟣 Product Target 추천</div>
         <div style="font-size:11px;color:#94a3b8;margin-bottom:10px">경쟁사 ASIN 페이지에서 잘 팔린 항목</div>
+        <div class="st-filter-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:11px;color:#94a3b8">
+          <label>최소 주문 <input type="number" id="stfPtOrders" value="2"  min="0" step="1" class="st-fnum"></label>
+          <label>최소 클릭 <input type="number" id="stfPtClicks" value="10" min="0" step="1" class="st-fnum"></label>
+        </div>
         <div id="stRecPT" style="font-size:12.5px;line-height:1.6"></div>
       </div>
     </div>
+    <style>
+      .st-fnum {
+        width:56px; background:#1e293b; border:1px solid var(--border);
+        border-radius:5px; color:#e2e8f0; padding:3px 5px; font-size:11px; margin:0 4px;
+      }
+      .st-filter-row label { display:inline-flex; align-items:center; gap:2px; }
+    </style>
   </div>
 
   <!-- ════════════ SQP 뷰 ════════════ -->
@@ -1923,8 +1951,27 @@ function renderStProductTabs() {
   });
 }
 
+function bindStFilters() {
+  if (window.__stFiltersBound) return;
+  var ids = ['stfNegSpend','stfNegClicks','stfNegAcos',
+             'stfUpAcos','stfUpOrders','stfUpClicks',
+             'stfExOrders','stfExAcos',
+             'stfPtOrders','stfPtClicks'];
+  var t = null;
+  ids.forEach(function(id){
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function(){
+      clearTimeout(t);
+      t = setTimeout(renderSearchTermsBody, 200);
+    });
+  });
+  window.__stFiltersBound = true;
+}
+
 function renderSearchTerms() {
   renderStProductTabs();
+  bindStFilters();
   renderSearchTermsBody();
 }
 
@@ -1951,27 +1998,49 @@ function renderSearchTermsBody() {
     return;
   }
 
-  // ── 분류 ────────────────────────────────────────────
-  var TARGET_ACOS = 0.35; // 35%
+  // 필터 입력값 읽기
+  var numv = function(id, dflt){
+    var el = document.getElementById(id);
+    if (!el) return dflt;
+    var v = parseFloat(el.value);
+    return isNaN(v) ? dflt : v;
+  };
+  var F = {
+    negSpend:  numv('stfNegSpend',  15),
+    negClicks: numv('stfNegClicks', 10),
+    negAcos:   numv('stfNegAcos',   80) / 100,
+    upAcos:    numv('stfUpAcos',    30) / 100,
+    upOrders:  numv('stfUpOrders',   3),
+    upClicks:  numv('stfUpClicks',  10),
+    exOrders:  numv('stfExOrders',   3),
+    exAcos:    numv('stfExAcos',    50) / 100,
+    ptOrders:  numv('stfPtOrders',   2),
+    ptClicks:  numv('stfPtClicks',  10)
+  };
+  // 매출 0인 경우 effective ACOS = Infinity 처리 (Negative 후보로 포함)
+  function effAcos(r){ return r.sales > 0 ? r.acos : Infinity; }
+
   var negList = [], upList = [], exactList = [], ptList = [];
 
   rows.forEach(function(r){
     var isAsinTerm = isAsinLike(r.term);
+    var ea = effAcos(r);
 
-    // 🔴 Negative: clicks>=10, spend>=$15, orders==0
-    if (!isAsinTerm && r.clicks >= 10 && r.spend >= 15 && r.orders === 0) {
+    // 🔴 Negative: spend≥, clicks≥, ACOS≥ (효율 안 나옴) — ASIN형은 제외
+    if (!isAsinTerm && r.spend >= F.negSpend && r.clicks >= F.negClicks && ea >= F.negAcos) {
       negList.push(r);
     }
-    // 🟢 Bid Up: orders>=3, acos < target, clicks>=10
-    if (r.orders >= 3 && r.acos > 0 && r.acos < TARGET_ACOS && r.clicks >= 10) {
+    // 🟢 Bid Up: orders≥, ACOS<max, clicks≥, sales>0
+    if (r.sales > 0 && r.orders >= F.upOrders && r.acos > 0 && r.acos <= F.upAcos && r.clicks >= F.upClicks) {
       upList.push(r);
     }
-    // 🔵 Exact 분리: orders>=3, matchType != EXACT, ASIN 형태 아님
-    if (!isAsinTerm && r.orders >= 3 && String(r.matchType || '').toUpperCase().indexOf('EXACT') === -1) {
+    // 🔵 Exact 분리: orders≥, ACOS≤, matchType != EXACT, ASIN형 아님
+    if (!isAsinTerm && r.orders >= F.exOrders && r.sales > 0 && r.acos <= F.exAcos &&
+        String(r.matchType || '').toUpperCase().indexOf('EXACT') === -1) {
       exactList.push(r);
     }
-    // 🟣 Product Target: term이 ASIN 형태, orders>=2 OR (clicks>=15 & acos < 0.5)
-    if (isAsinTerm && (r.orders >= 2 || (r.clicks >= 15 && r.acos > 0 && r.acos < 0.5))) {
+    // 🟣 Product Target: ASIN 형태, orders≥, clicks≥
+    if (isAsinTerm && r.orders >= F.ptOrders && r.clicks >= F.ptClicks) {
       ptList.push(r);
     }
   });
@@ -2008,9 +2077,11 @@ function renderSearchTermsBody() {
   var KSEP = '</span><span style="color:#475569;margin:0 5px">·</span>';
 
   renderList(negEl, negList, '#f87171', function(r){
+    var acosTxt = r.sales > 0 ? (r.acos*100).toFixed(0) + '%' : '∞ (매출 0)';
     return KMET + '클릭 ' + fmtN(r.clicks) + '회' + KSEP +
            KMET + 'spend $' + r.spend.toFixed(0) + KSEP +
-           KMET + '주문 0</span>' +
+           KMET + '주문 ' + r.orders + KSEP +
+           KMET + 'ACOS ' + acosTxt + '</span>' +
            ' <span style="color:#64748b">→</span> <b style="color:#fca5a5">Negative Exact로 추가</b>';
   }, '해당 제품에 Negative 추천 키워드 없음');
 
