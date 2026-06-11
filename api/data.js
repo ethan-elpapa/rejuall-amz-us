@@ -492,7 +492,10 @@ module.exports = async (req, res) => {
     const rows         = rawSheet    ? parseRawRows(allValues[rawSheet.title]) : [];
     const productInfo  = infoSheet   ? parseInfoSheet(allValues[infoSheet.title]) : { map: {}, knownAsins: [] };
     const monthlyGoals = goalSheet   ? parseGoalSheet(allValues[goalSheet.title]) : {};
-    const adRows       = adRawSheet  ? parseAdRaw(allValues[adRawSheet.title]) : [];
+    // 2025-10-18 이전 데이터는 포트폴리오 미설정 + Sales 컬럼 손상으로 제외
+    const AD_DATA_START = '2025-10-18';
+    const adRowsAll    = adRawSheet  ? parseAdRaw(allValues[adRawSheet.title]) : [];
+    const adRows       = adRowsAll.filter(r => r.date && r.date >= AD_DATA_START && r.portfolio);
     const stParsed     = stSheet     ? parseSearchTerms(allValues[stSheet.title]) : { agg: [], byWeek: [] };
 
     // PRODUCT_NAMES 우선 적용 (시트 값보다 우선)
