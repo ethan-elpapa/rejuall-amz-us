@@ -645,6 +645,23 @@
     </div>
   </div>
 
+  <!-- ②-1 세션 트렌드 (매출 트렌드 바로 아래) -->
+  <div id="sec-sessions" class="grid-2" style="margin-bottom:20px">
+    <div class="card span-2">
+      <div class="card-title">
+        세션 트렌드 (Sessions - Total)
+        <div class="toggle-row" style="margin:0">
+          <button class="toggle-btn active" data-chart="sessions" data-agg="daily">일별</button>
+          <button class="toggle-btn" data-chart="sessions" data-agg="weekly">주별</button>
+          <button class="toggle-btn" data-chart="sessions" data-agg="monthly">월별</button>
+        </div>
+      </div>
+      <div class="chart-wrap" style="height:240px">
+        <canvas id="chartSessions"></canvas>
+      </div>
+    </div>
+  </div>
+
   <!-- ②-2 판매 트렌드 (Units) -->
   <div id="sec-unitsTrend" class="grid-2" style="margin-bottom:20px">
     <div class="card span-2">
@@ -675,23 +692,6 @@
       </div>
       <div class="chart-wrap" style="height:240px">
         <canvas id="chartCvrTrend"></canvas>
-      </div>
-    </div>
-  </div>
-
-  <!-- ②-4 세션 트렌드 -->
-  <div id="sec-sessions" class="grid-2" style="margin-bottom:20px">
-    <div class="card span-2">
-      <div class="card-title">
-        세션 트렌드 (Sessions - Total)
-        <div class="toggle-row" style="margin:0">
-          <button class="toggle-btn active" data-chart="sessions" data-agg="daily">일별</button>
-          <button class="toggle-btn" data-chart="sessions" data-agg="weekly">주별</button>
-          <button class="toggle-btn" data-chart="sessions" data-agg="monthly">월별</button>
-        </div>
-      </div>
-      <div class="chart-wrap" style="height:240px">
-        <canvas id="chartSessions"></canvas>
       </div>
     </div>
   </div>
@@ -947,26 +947,71 @@
       </div>
     </div>
 
-    <!-- 서치텀 분석 (placeholder) -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-title">서치텀 분석 &amp; 대안</div>
-      <div style="padding:20px;color:#94a3b8;font-size:13px;line-height:1.7">
-        <div style="color:#fbbf24;font-weight:600;margin-bottom:10px">⚠️ 서치텀 데이터 미연동</div>
-        <div style="margin-bottom:8px"><strong style="color:#e2e8f0">필요 데이터 (택1):</strong></div>
-        <ul style="margin:0 0 12px 18px">
-          <li>Amazon Ads Console → Reports → <strong>Search Term Report</strong> (CSV/XLSX)</li>
-          <li>또는 Bulk Operations → <strong>Bulk Sheet</strong> (Sponsored Products / Brands / Display)</li>
-          <li>또는 Google Sheet 탭으로 연동 (예: <code>SearchTerm_RAW</code>)</li>
-        </ul>
-        <div style="margin-bottom:8px"><strong style="color:#e2e8f0">분석 후 제공할 인사이트:</strong></div>
-        <ul style="margin:0 0 12px 18px">
-          <li>High-Spend / Low-CVR 키워드 → <strong style="color:#f87171">Negative KW 후보</strong></li>
-          <li>High-CVR / Low-Bid 키워드 → <strong style="color:#34d399">입찰 증액 후보</strong></li>
-          <li>Conversion-only KW → <strong style="color:#60a5fa">Exact Match 신규 캠페인 후보</strong></li>
-          <li>Brand vs Generic vs Competitor 분리 분석</li>
-          <li>ACOS &gt; 목표치 / 클릭 N회 이상 무전환 자동 플래깅</li>
-        </ul>
-        <div style="margin-top:14px;color:#64748b">데이터 소스를 알려주시면 자동 분석 + 액션 리스트 형태로 구현해드립니다.</div>
+    <!-- 서치텀 분석 -->
+    <div class="section-header" style="font-size:16px;margin-top:30px">서치텀 분석 &amp; 대안</div>
+
+    <!-- 임계치 컨트롤 -->
+    <div class="card" style="margin-bottom:14px;padding:14px">
+      <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:12px;color:#94a3b8">
+        <div>
+          <span style="margin-right:6px">목표 ACOS</span>
+          <input type="number" id="stTargetAcos" value="35" min="5" max="100" step="1"
+            style="width:60px;background:#1e293b;border:1px solid var(--border);border-radius:6px;color:#e2e8f0;padding:4px 6px;font-size:12px"> %
+        </div>
+        <div>
+          <span style="margin-right:6px">최소 클릭</span>
+          <input type="number" id="stMinClicks" value="10" min="1" step="1"
+            style="width:60px;background:#1e293b;border:1px solid var(--border);border-radius:6px;color:#e2e8f0;padding:4px 6px;font-size:12px">
+        </div>
+        <div>
+          <span style="margin-right:6px">최소 광고비</span> $<input type="number" id="stMinSpend" value="20" min="0" step="5"
+            style="width:70px;background:#1e293b;border:1px solid var(--border);border-radius:6px;color:#e2e8f0;padding:4px 6px;font-size:12px;margin-left:2px">
+        </div>
+        <div>
+          <span style="margin-right:6px">포트폴리오</span>
+          <select id="stPortfolioFilter" class="filter-select" style="min-width:140px;padding:4px 8px;font-size:12px">
+            <option value="">전체</option>
+          </select>
+        </div>
+        <button id="stApplyBtn" class="toggle-btn active" style="padding:5px 14px">적용</button>
+      </div>
+    </div>
+
+    <!-- 요약 -->
+    <div class="grid-3" style="margin-bottom:14px">
+      <div class="card" style="padding:14px">
+        <div style="color:#f87171;font-weight:600;font-size:12px;margin-bottom:4px">🔴 Negative KW 후보</div>
+        <div style="font-size:24px;font-weight:700;color:#f87171" id="stNegCount">—</div>
+        <div style="font-size:11px;color:#64748b" id="stNegSpend">잠재 절감액 —</div>
+      </div>
+      <div class="card" style="padding:14px">
+        <div style="color:#34d399;font-weight:600;font-size:12px;margin-bottom:4px">🟢 입찰 증액 후보</div>
+        <div style="font-size:24px;font-weight:700;color:#34d399" id="stUpCount">—</div>
+        <div style="font-size:11px;color:#64748b" id="stUpSales">기여 매출 —</div>
+      </div>
+      <div class="card" style="padding:14px">
+        <div style="color:#60a5fa;font-weight:600;font-size:12px;margin-bottom:4px">🔵 Exact Match 신규 후보</div>
+        <div style="font-size:24px;font-weight:700;color:#60a5fa" id="stExactCount">—</div>
+        <div style="font-size:11px;color:#64748b" id="stExactSales">검증 매출 —</div>
+      </div>
+    </div>
+
+    <!-- 탭 -->
+    <div style="display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border)">
+      <button class="st-tab active" data-st-tab="neg"   style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:#f87171;border-bottom:2px solid #f87171;margin-bottom:-1px">🔴 Negative 후보</button>
+      <button class="st-tab" data-st-tab="up"           style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px">🟢 입찰 증액 후보</button>
+      <button class="st-tab" data-st-tab="exact"        style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px">🔵 Exact 신규 후보</button>
+      <button class="st-tab" data-st-tab="top"          style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px">🏆 Top 30 서치텀</button>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;padding:0">
+      <div style="overflow-x:auto;max-height:600px;overflow-y:auto">
+        <table class="wow-table" id="stTable" style="font-size:12px">
+          <thead style="position:sticky;top:0;background:#0f1626;z-index:1">
+            <tr id="stTableHead"></tr>
+          </thead>
+          <tbody id="stTableBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -1243,20 +1288,7 @@ var STATE = {
 // ═══════════════════════════════════════════════════════
 //  BOOT — Vercel Serverless API (/api/data) 호출
 // ═══════════════════════════════════════════════════════
-// 광고 데이터 (정적 JSON)
-function loadAdData() {
-  fetch('ad_data.json')
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(d){
-      if (!d) return;
-      STATE.adData = d;
-      renderAdsView();
-    })
-    .catch(function(){});
-}
-
 window.onload = function () {
-  loadAdData();
   // Apps Script 내장 호스팅에서 열렸으면 google.script.run 사용 (호환성)
   if (typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run
@@ -1285,6 +1317,10 @@ function onDataLoaded(resp) {
   STATE.knownAsins   = resp.knownAsins  || [];
   STATE.productColors= resp.productColors || {};
   STATE.sheetGoals   = resp.monthlyGoals || {};  // 시트의 '목표 매출' 탭에서 가져옴
+  STATE.adRows           = resp.adRows           || [];
+  STATE.searchTerms      = resp.searchTerms      || [];
+  STATE.searchTermsWeekly= resp.searchTermsWeekly|| [];
+  setTimeout(function(){ renderAdsView(); }, 0);  // 광고 뷰 렌더 (DOM ready 후)
 
   if (resp.updatedAt) {
     var d = new Date(resp.updatedAt);
@@ -1687,31 +1723,41 @@ function isoWeek(dateStr) {
 }
 
 function renderAdsView() {
-  var d = STATE.adData;
-  if (!d) return;
-  renderAdKpis(d);
-  renderAdWeekly(d);
-  renderAdPortfolio(d);
-  renderAdPortfolioWeekly(d);
+  var rows = STATE.adRows || [];
+  if (!rows.length) return;
+  renderAdKpis(rows);
+  renderAdWeekly(rows);
+  renderAdPortfolio(rows);
+  renderAdPortfolioWeekly(rows);
+  renderSearchTerms();
 }
 
-function renderAdKpis(d) {
-  var k = d.kpi || {};
+function renderAdKpis(rows) {
+  var total = rows.reduce(function(s, r){
+    s.spend += r.spend; s.sales += r.sales; s.clicks += r.clicks;
+    s.impressions += r.impressions; s.orders += r.orders;
+    return s;
+  }, { spend:0, sales:0, clicks:0, impressions:0, orders:0 });
+  var cpc  = total.clicks > 0 ? total.spend / total.clicks : 0;
+  var acos = total.sales > 0 ? total.spend / total.sales : 0;
+  var roas = total.spend > 0 ? total.sales / total.spend : 0;
+  var ctr  = total.impressions > 0 ? total.clicks / total.impressions : 0;
+  var cvr  = total.clicks > 0 ? total.orders / total.clicks : 0;
   var set = function(id, v){ var el = document.getElementById(id); if (el) el.innerHTML = v; };
-  set('adKpiSpend',  fmt$(k.spend || 0));
-  set('adKpiCpc',    'CPC: $' + (k.cpc || 0).toFixed(2));
-  set('adKpiSales',  fmt$(k.sales || 0));
-  set('adKpiOrders', fmtN(k.orders || 0) + ' 주문');
-  set('adKpiAcos',   ((k.acos || 0) * 100).toFixed(1) + '%');
-  set('adKpiRoas',   'ROAS: ' + (k.roas || 0).toFixed(2) + 'x');
-  set('adKpiCtr',    'CTR: ' + ((k.ctr || 0) * 100).toFixed(2) + '%');
-  set('adKpiCvr',    'CVR: ' + ((k.cvr || 0) * 100).toFixed(2) + '%');
+  set('adKpiSpend',  fmt$(total.spend));
+  set('adKpiCpc',    'CPC: $' + cpc.toFixed(2));
+  set('adKpiSales',  fmt$(total.sales));
+  set('adKpiOrders', fmtN(total.orders) + ' 주문');
+  set('adKpiAcos',   (acos * 100).toFixed(1) + '%');
+  set('adKpiRoas',   'ROAS: ' + roas.toFixed(2) + 'x');
+  set('adKpiCtr',    'CTR: ' + (ctr * 100).toFixed(2) + '%');
+  set('adKpiCvr',    'CVR: ' + (cvr * 100).toFixed(2) + '%');
 }
 
-function aggregateAdWeekly(daily) {
+function aggregateAdWeekly(rows) {
   var map = {};
-  daily.forEach(function(r){
-    var w = isoWeek(r.date);
+  rows.forEach(function(r){
+    var w = r.week || isoWeek(r.date);
     if (!map[w]) map[w] = { week: w, spend:0, sales:0, impressions:0, clicks:0, orders:0 };
     map[w].spend       += r.spend       || 0;
     map[w].sales       += r.sales       || 0;
@@ -1726,8 +1772,8 @@ function aggregateAdWeekly(daily) {
   });
 }
 
-function renderAdWeekly(d) {
-  var weekly = aggregateAdWeekly(d.daily || []);
+function renderAdWeekly(rows) {
+  var weekly = aggregateAdWeekly(rows);
   var metric = AD_STATE.weeklyMetric;
   var labels = weekly.map(function(w){ return w.week; });
   var values = weekly.map(function(w){ return w[metric]; });
@@ -1769,8 +1815,8 @@ function aggByPortfolio(campaignDaily) {
   }).sort(function(a,b){ return b.spend - a.spend; });
 }
 
-function renderAdPortfolio(d) {
-  var rows = aggByPortfolio(d.campaignDaily || []);
+function renderAdPortfolio(adRows) {
+  var rows = aggByPortfolio(adRows);
   var tbody = document.getElementById('adPortfolioBody');
   if (tbody) {
     tbody.innerHTML = rows.map(function(p, i){
@@ -1814,11 +1860,11 @@ function renderAdPortfolio(d) {
   }
 }
 
-function aggPortfolioWeekly(campaignDaily) {
+function aggPortfolioWeekly(adRows) {
   var map = {};
-  campaignDaily.forEach(function(r){
-    var p = r.portfolio || r.campaign || 'Unknown';
-    var w = isoWeek(r.date);
+  adRows.forEach(function(r){
+    var p = r.portfolio || 'Unknown';
+    var w = r.week || isoWeek(r.date);
     if (!map[p]) map[p] = {};
     if (!map[p][w]) map[p][w] = { spend:0, sales:0, orders:0 };
     map[p][w].spend  += r.spend  || 0;
@@ -1828,8 +1874,8 @@ function aggPortfolioWeekly(campaignDaily) {
   return map;
 }
 
-function renderAdPortfolioWeekly(d) {
-  var m = aggPortfolioWeekly(d.campaignDaily || []);
+function renderAdPortfolioWeekly(adRows) {
+  var m = aggPortfolioWeekly(adRows);
   var weeksSet = {};
   Object.keys(m).forEach(function(p){ Object.keys(m[p]).forEach(function(w){ weeksSet[w] = true; }); });
   var weeks = Object.keys(weeksSet).sort();
@@ -1880,7 +1926,7 @@ function bindAdToggles() {
       var siblings = this.parentElement.querySelectorAll('.toggle-btn');
       siblings.forEach(function(b){ b.classList.remove('active'); });
       this.classList.add('active');
-      if (STATE.adData) renderAdWeekly(STATE.adData);
+      if (STATE.adRows) renderAdWeekly(STATE.adRows);
     });
   });
   document.querySelectorAll('[data-ad-pmetric]').forEach(function(btn){
@@ -1889,7 +1935,7 @@ function bindAdToggles() {
       var siblings = this.parentElement.querySelectorAll('.toggle-btn');
       siblings.forEach(function(b){ b.classList.remove('active'); });
       this.classList.add('active');
-      if (STATE.adData) renderAdPortfolioWeekly(STATE.adData);
+      if (STATE.adRows) renderAdPortfolioWeekly(STATE.adRows);
     });
   });
 }

@@ -157,6 +157,29 @@ function pickInfoSheet(allSheets) {
   return null;
 }
 
+function pickAdRawSheet(allSheets) {
+  for (const sh of allSheets) {
+    const name = sh.title.replace(/\s/g, '');
+    if (name.indexOf('내부광고RAW') > -1 || name.indexOf('광고RAW') > -1 || /ad.*raw/i.test(sh.title)) return sh;
+  }
+  return null;
+}
+
+function pickSearchTermSheet(allSheets) {
+  for (const sh of allSheets) {
+    const lower = sh.title.toLowerCase().replace(/\s/g, '');
+    if (lower.indexOf('searchterm') > -1 || sh.title.indexOf('서치텀') > -1) return sh;
+  }
+  return null;
+}
+
+function pickTargetingSheet(allSheets) {
+  for (const sh of allSheets) {
+    if (sh.title.toLowerCase().indexOf('targeting') > -1) return sh;
+  }
+  return null;
+}
+
 // ── 파서 ───────────────────────────────────────────────
 function parseRawRows(values) {
   if (!values || values.length < 2) return [];
@@ -229,6 +252,152 @@ function parseInfoSheet(values) {
     }
   }
   return { map, knownAsins };
+}
+
+// 내부 광고 RAW 파서
+function parseAdRaw(values) {
+  if (!values || values.length < 2) return [];
+  const headers = values[0];
+  const idx = {
+    week:        findColIdx(headers, '주차'),
+    date:        findColIdx(headers, 'date'),
+    asin:        findColIdx(headers, 'asin'),
+    portfolio:   findColIdx(headers, 'portfolio'),
+    impressions: findColIdx(headers, 'impressions'),
+    clicks:      findColIdx(headers, 'clicks'),
+    ctr:         findColIdx(headers, 'ctr'),
+    spend:       findColIdx(headers, 'spend'),
+    cpc:         findColIdx(headers, 'cpc'),
+    orders:      findColIdx(headers, 'orders'),
+    sales:       findColIdx(headers, 'sales'),
+    acos:        findColIdx(headers, 'acos'),
+    roas:        findColIdx(headers, 'roas'),
+    ntbOrders:   findColIdx(headers, 'ntb orders')
+  };
+  const cellStr = (r, i) => (i < 0 || i >= r.length) ? '' : String(r[i] ?? '').trim();
+  const cellNum = (r, i) => (i < 0 || i >= r.length) ? 0  : toNum(r[i]);
+
+  const out = [];
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    const dateStr = normalizeDate(idx.date >= 0 ? r[idx.date] : null);
+    if (!dateStr) continue;
+    out.push({
+      week:        cellStr(r, idx.week),
+      date:        dateStr,
+      asin:        cellStr(r, idx.asin),
+      portfolio:   cellStr(r, idx.portfolio),
+      impressions: cellNum(r, idx.impressions),
+      clicks:      cellNum(r, idx.clicks),
+      ctr:         cellNum(r, idx.ctr),
+      spend:       cellNum(r, idx.spend),
+      cpc:         cellNum(r, idx.cpc),
+      orders:      cellNum(r, idx.orders),
+      sales:       cellNum(r, idx.sales),
+      acos:        cellNum(r, idx.acos),
+      roas:        cellNum(r, idx.roas),
+      ntbOrders:   cellNum(r, idx.ntbOrders)
+    });
+  }
+  return out;
+}
+
+// Search Term Report 파서 (term + portfolio + matchType 단위 집계 — 응답 크기 축소)
+function parseSearchTerms(values) {
+  if (!values || values.length < 2) return { agg: [], byWeek: [] };
+  const headers = values[0];
+  const idx = {
+    week:       findColIdx(headers, '주차'),
+    portfolio:  findColIdx(headers, 'portfolio name'),
+    campaign:   findColIdx(headers, 'campaign name'),
+    matchType:  findColIdx(headers, 'match type'),
+    term:       findColIdx(headers, 'customer search term'),
+    impressions:findColIdx(headers, 'impressions'),
+    clicks:     findColIdx(headers, 'clicks'),
+    spend:      findColIdx(headers, 'spend'),
+    sales:      findColIdx(headers, '7 day total sales'),
+    orders:     findColIdx(headers, 'orders')
+  };
+  const cellStr = (r, i) => (i < 0 || i >= r.length) ? '' : String(r[i] ?? '').trim();
+  const cellNum = (r, i) => (i < 0 || i >= r.length) ? 0  : toNum(r[i]);
+
+  const aggMap = {};
+  const weekMap = {};
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    const term = cellStr(r, idx.term);
+    if (!term) continue;
+    const portfolio = cellStr(r, idx.portfolio);
+    const matchType = cellStr(r, idx.matchType);
+    const campaign = cellStr(r, idx.campaign);
+    const week = cellStr(r, idx.week);
+    const impressions = cellNum(r, idx.impressions);
+    const clicks = cellNum(r, idx.clicks);
+    const spend = cellNum(r, idx.spend);
+    const sales = cellNum(r, idx.sales);
+    const orders = cellNum(r, idx.orders);
+
+    // 1) term × portfolio × matchType 집계
+    const key = term + '|' + portfolio + '|' + matchType;
+    if (!aggMap[key]) {
+      aggMap[key] = { term, portfolio, matchType, campaign,
+        impressions: 0, clicks: 0, spend: 0, sales: 0, orders: 0, weeks: {} };
+    }
+    const a = aggMap[key];
+    a.impressions += impressions;
+    a.clicks      += clicks;
+    a.spend       += spend;
+    a.sales       += sales;
+    a.orders      += orders;
+    if (week) a.weeks[week] = true;
+
+    // 2) week × portfolio 집계 (서치텀 트렌드용)
+    const wkey = week + '|' + portfolio;
+    if (!weekMap[wkey]) {
+      weekMap[wkey] = { week, portfolio, impressions: 0, clicks: 0, spend: 0, sales: 0, orders: 0, termCount: 0 };
+    }
+    const w = weekMap[wkey];
+    w.impressions += impressions;
+    w.clicks      += clicks;
+    w.spend       += spend;
+    w.sales       += sales;
+    w.orders      += orders;
+    w.termCount   += 1;
+  }
+
+  // 파생 지표 계산 + 주차 카운트 평탄화
+  const agg = Object.values(aggMap).map(a => ({
+    term: a.term,
+    portfolio: a.portfolio,
+    matchType: a.matchType,
+    campaign: a.campaign,
+    impressions: a.impressions,
+    clicks: a.clicks,
+    spend: +a.spend.toFixed(2),
+    sales: +a.sales.toFixed(2),
+    orders: a.orders,
+    ctr:  a.impressions > 0 ? a.clicks / a.impressions : 0,
+    cpc:  a.clicks > 0 ? a.spend / a.clicks : 0,
+    cvr:  a.clicks > 0 ? a.orders / a.clicks : 0,
+    acos: a.sales > 0 ? a.spend / a.sales : 0,
+    roas: a.spend > 0 ? a.sales / a.spend : 0,
+    weekCount: Object.keys(a.weeks).length
+  }));
+
+  const byWeek = Object.values(weekMap).map(w => ({
+    week: w.week,
+    portfolio: w.portfolio,
+    impressions: w.impressions,
+    clicks: w.clicks,
+    spend: +w.spend.toFixed(2),
+    sales: +w.sales.toFixed(2),
+    orders: w.orders,
+    termCount: w.termCount,
+    acos: w.sales > 0 ? w.spend / w.sales : 0,
+    roas: w.spend > 0 ? w.sales / w.spend : 0
+  }));
+
+  return { agg, byWeek };
 }
 
 function parseGoalSheet(values) {
@@ -314,13 +483,17 @@ module.exports = async (req, res) => {
       allValues[sheetProps[i].title] = vr.values || [];
     });
 
-    const rawSheet  = pickRawSheet(sheetProps, allValues);
-    const infoSheet = pickInfoSheet(sheetProps);
-    const goalSheet = pickGoalSheet(sheetProps);
+    const rawSheet     = pickRawSheet(sheetProps, allValues);
+    const infoSheet    = pickInfoSheet(sheetProps);
+    const goalSheet    = pickGoalSheet(sheetProps);
+    const adRawSheet   = pickAdRawSheet(sheetProps);
+    const stSheet      = pickSearchTermSheet(sheetProps);
 
-    const rows         = rawSheet  ? parseRawRows(allValues[rawSheet.title]) : [];
-    const productInfo  = infoSheet ? parseInfoSheet(allValues[infoSheet.title]) : { map: {}, knownAsins: [] };
-    const monthlyGoals = goalSheet ? parseGoalSheet(allValues[goalSheet.title]) : {};
+    const rows         = rawSheet    ? parseRawRows(allValues[rawSheet.title]) : [];
+    const productInfo  = infoSheet   ? parseInfoSheet(allValues[infoSheet.title]) : { map: {}, knownAsins: [] };
+    const monthlyGoals = goalSheet   ? parseGoalSheet(allValues[goalSheet.title]) : {};
+    const adRows       = adRawSheet  ? parseAdRaw(allValues[adRawSheet.title]) : [];
+    const stParsed     = stSheet     ? parseSearchTerms(allValues[stSheet.title]) : { agg: [], byWeek: [] };
 
     // 폴백: ASIN-INFO 비어있으면 PRODUCT_NAMES 사용
     if (productInfo.knownAsins.length === 0) {
@@ -337,17 +510,20 @@ module.exports = async (req, res) => {
       knownAsins: productInfo.knownAsins,
       productColors: PRODUCT_COLORS,
       monthlyGoals,
+      adRows,
+      searchTerms: stParsed.agg,
+      searchTermsWeekly: stParsed.byWeek,
       updatedAt: new Date().toISOString(),
       diag: {
         rawSheet: rawSheet ? rawSheet.title : null,
         rowCount: rows.length,
         goalSheet: goalSheet ? goalSheet.title : null,
         goalKeys: Object.keys(monthlyGoals).length,
-        allSheets: sheetProps.map(s => ({
-          title: s.title,
-          rows: s.gridProperties && s.gridProperties.rowCount,
-          headers: ((allValues[s.title] || [])[0] || []).slice(0, 25)
-        }))
+        adSheet: adRawSheet ? adRawSheet.title : null,
+        adRowCount: adRows.length,
+        stSheet: stSheet ? stSheet.title : null,
+        stAggCount: stParsed.agg.length,
+        stWeekCount: stParsed.byWeek.length
       }
     };
 
