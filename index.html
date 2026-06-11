@@ -1938,12 +1938,13 @@ function renderSearchTerms() {
   // ── 렌더링 ──────────────────────────────────────────
   function fmtItem(r, accent, body) {
     var prod = productLabel(r.portfolio);
-    return '<div style="padding:8px 10px;margin-bottom:6px;background:#1e293b66;border-left:3px solid '+accent+';border-radius:4px">' +
-      '<div style="font-weight:600;color:#e2e8f0;margin-bottom:2px">' +
-        '<span style="color:'+accent+'">' + prod + '</span> · ' +
-        '<span style="font-family:monospace;font-size:12px">' + escapeHtml(r.term) + '</span>' +
+    return '<div style="padding:10px 12px;margin-bottom:8px;background:#0b1220;border:1px solid #1e293b;border-left:4px solid '+accent+';border-radius:6px">' +
+      '<div style="font-weight:700;color:#f1f5f9;margin-bottom:4px;font-size:13px">' +
+        '<span style="color:'+accent+';font-weight:700">' + escapeHtml(prod) + '</span>' +
+        '<span style="color:#64748b;margin:0 6px">·</span>' +
+        '<span style="font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:#fef3c7">' + escapeHtml(r.term) + '</span>' +
       '</div>' +
-      '<div style="color:#94a3b8;font-size:11.5px">' + body + '</div>' +
+      '<div style="color:#cbd5e1;font-size:12px">' + body + '</div>' +
     '</div>';
   }
 
@@ -1956,22 +1957,38 @@ function renderSearchTerms() {
       (list.length > 10 ? '<div style="color:#64748b;font-size:11px;text-align:right;margin-top:4px">+ ' + (list.length - 10) + ' 건 더</div>' : '');
   }
 
+  var KMET = '<span style="color:#e2e8f0">';  // 밝은 수치
+  var KSEP = '</span><span style="color:#475569;margin:0 5px">·</span>';
+
   renderList(negEl, negList, '#f87171', function(r){
-    return '클릭 ' + fmtN(r.clicks) + '회 · spend $' + r.spend.toFixed(0) + ' · 주문 0 → <b style="color:#f87171">Negative Exact로 추가</b>';
+    return KMET + '클릭 ' + fmtN(r.clicks) + '회' + KSEP +
+           KMET + 'spend $' + r.spend.toFixed(0) + KSEP +
+           KMET + '주문 0</span>' +
+           ' <span style="color:#64748b">→</span> <b style="color:#fca5a5">Negative Exact로 추가</b>';
   }, '해당 제품에 Negative 추천 키워드 없음');
 
   renderList(upEl, upList, '#34d399', function(r){
-    return '주문 ' + r.orders + ' · ACOS ' + (r.acos*100).toFixed(1) + '% · ROAS ' + r.roas.toFixed(2) + 'x → <b style="color:#34d399">입찰 +20~30% 증액</b>';
+    return KMET + '주문 ' + r.orders + KSEP +
+           KMET + 'ACOS ' + (r.acos*100).toFixed(1) + '%' + KSEP +
+           KMET + 'ROAS ' + r.roas.toFixed(2) + 'x</span>' +
+           ' <span style="color:#64748b">→</span> <b style="color:#6ee7b7">입찰 +20~30% 증액</b>';
   }, '효율 좋은 입찰 증액 후보 없음');
 
   renderList(exactEl, exactList, '#60a5fa', function(r){
     var mt = String(r.matchType || 'BROAD').toUpperCase();
-    return '주문 ' + r.orders + ' · matchType ' + mt + ' · ROAS ' + r.roas.toFixed(2) + 'x → <b style="color:#60a5fa">Exact Match 캠페인 신설</b>';
+    return KMET + '주문 ' + r.orders + KSEP +
+           KMET + 'matchType ' + mt + KSEP +
+           KMET + 'ROAS ' + r.roas.toFixed(2) + 'x</span>' +
+           ' <span style="color:#64748b">→</span> <b style="color:#93c5fd">Exact Match 캠페인 신설</b>';
   }, '검증된 검색어 없음 (orders 3+)');
 
   renderList(ptEl, ptList, '#a78bfa', function(r){
     var roasTxt = r.roas > 0 ? r.roas.toFixed(2) + 'x' : '—';
-    return '경쟁 ASIN · 주문 ' + r.orders + ' · ROAS ' + roasTxt + ' · 클릭 ' + r.clicks + ' → <b style="color:#a78bfa">Product Targeting 캠페인 진행</b>';
+    return KMET + '경쟁 ASIN' + KSEP +
+           KMET + '주문 ' + r.orders + KSEP +
+           KMET + 'ROAS ' + roasTxt + KSEP +
+           KMET + '클릭 ' + r.clicks + '</span>' +
+           ' <span style="color:#64748b">→</span> <b style="color:#c4b5fd">Product Targeting 캠페인 진행</b>';
   }, 'Product Target 추천 ASIN 없음');
 }
 
