@@ -1005,6 +1005,17 @@
       </div>
     </div>
 
+    <!-- 키워드 검색 패널 -->
+    <div class="card" style="padding:14px 16px;margin-bottom:14px">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <span style="font-size:12px;color:#94a3b8;font-weight:600">🔍 키워드 효율 검색</span>
+        <input type="text" id="stKeywordSearch" placeholder="키워드 입력 (예: pdrn cream, retinol, ceramide…)"
+          style="flex:1;min-width:240px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#1e293b;color:#e2e8f0">
+        <button id="stKeywordClear" style="padding:5px 12px;border:1px solid var(--border);background:transparent;color:#94a3b8;border-radius:5px;cursor:pointer;font-size:12px">초기화</button>
+      </div>
+      <div id="stKeywordResults" style="font-size:12.5px"></div>
+    </div>
+
     <!-- 제품 탭 -->
     <div id="stProductTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0"></div>
 
@@ -1365,8 +1376,9 @@ function onDataLoaded(resp) {
   STATE.adRows           = resp.adRows           || [];
   STATE.searchTerms        = resp.searchTerms        || [];
   STATE.searchTermsWeekly  = resp.searchTermsWeekly  || [];
-  STATE.searchTermsPeriods = resp.searchTermsPeriods || null;
-  STATE.searchTermsWeeks   = resp.searchTermsWeeks   || [];
+  STATE.searchTermsPeriods    = resp.searchTermsPeriods    || null;
+  STATE.searchTermsWeeks      = resp.searchTermsWeeks      || [];
+  STATE.searchTermsByTermWeek = resp.searchTermsByTermWeek || [];
   setTimeout(function(){ renderAdsView(); }, 0);  // 광고 뷰 렌더 (DOM ready 후)
 
   if (resp.updatedAt) {
@@ -2002,7 +2014,145 @@ function renderSearchTerms() {
   renderStProductTabs();
   bindStFilters();
   bindStPeriod();
+  bindStKeywordSearch();
   renderSearchTermsBody();
+}
+
+function bindStKeywordSearch() {
+  var inp = document.getElementById('stKeywordSearch');
+  var clr = document.getElementById('stKeywordClear');
+  if (!inp || inp.dataset.bound === '1') return;
+  var t = null;
+  inp.addEventListener('input', function(){
+    clearTimeout(t);
+    t = setTimeout(renderStKeywordResults, 250);
+  });
+  if (clr) clr.addEventListener('click', function(){
+    inp.value = '';
+    renderStKeywordResults();
+  });
+  inp.dataset.bound = '1';
+}
+
+function renderStKeywordResults() {
+  var box = document.getElementById('stKeywordResults');
+  var inp = document.getElementById('stKeywordSearch');
+  if (!box || !inp) return;
+  var q = (inp.value || '').trim().toLowerCase();
+  if (!q) { box.innerHTML = ''; return; }
+
+  var data = STATE.searchTermsByTermWeek || [];
+  // 제품 탭이 활성화면 그쪽 ASIN으로 한정
+  var asinFilter = ST_STATE.activeAsin || AD_STATE.asinFilter || '';
+
+  // 매칭 행
+  var matches = data.filter(function(r){
+    if (!r.t || !r.t.toLowerCase().includes(q)) return false;
+    if (asinFilter) {
+      var a = portfolioToAsin(r.p);
+      if (a !== asinFilter) return false;
+    }
+    return true;
+  });
+
+  if (!matches.length) {
+    box.innerHTML = '<div style="color:#64748b;font-size:12px;padding:6px 0">매칭되는 키워드 없음</div>';
+    return;
+  }
+
+  // (term, portfolio, matchType) 단위로 그룹핑하고 그 안에서 주차별 행
+  var groups = {};
+  matches.forEach(function(r){
+    var k = r.t + '|' + r.p + '|' + r.mt;
+    if (!groups[k]) groups[k] = { term: r.t, portfolio: r.p, matchType: r.mt, weeks: [], tot: { i:0,c:0,s:0,sa:0,o:0 } };
+    groups[k].weeks.push(r);
+    var t = groups[k].tot;
+    t.i += r.i; t.c += r.c; t.s += r.s; t.sa += r.sa; t.o += r.o;
+  });
+
+  // 주차 정렬키 (W12 < W1 < W2 ...)
+  var weeksOrder = STATE.searchTermsWeeks || [];
+  var idx = {};
+  weeksOrder.forEach(function(w, i){ idx[w] = i; });
+  function wkRank(w){ return idx[w] != null ? idx[w] : 999; }
+
+  var arr = Object.keys(groups).map(function(k){ return groups[k]; });
+  arr.sort(function(a,b){ return b.tot.s - a.tot.s; });  // 스펜드 큰 순
+
+  // 결과 헤더
+  var totals = arr.reduce(function(s, g){
+    s.i+=g.tot.i; s.c+=g.tot.c; s.s+=g.tot.s; s.sa+=g.tot.sa; s.o+=g.tot.o; return s;
+  }, {i:0,c:0,s:0,sa:0,o:0});
+  var totAcos = totals.sa > 0 ? totals.s / totals.sa : 0;
+  var totRoas = totals.s > 0 ? totals.sa / totals.s : 0;
+
+  var html = '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:#0b1220;border-radius:6px;font-size:12px">' +
+    '<span style="color:#94a3b8">검색 결과 <b style="color:#e2e8f0">' + arr.length + '</b>개 그룹 · <b style="color:#e2e8f0">' + matches.length + '</b>행</span>' +
+    '<span style="color:#475569">|</span>' +
+    '<span style="color:#94a3b8">총 클릭 <b style="color:#e2e8f0">' + fmtN(totals.c) + '</b></span>' +
+    '<span style="color:#94a3b8">총 Spend <b style="color:#f87171">$' + totals.s.toFixed(0) + '</b></span>' +
+    '<span style="color:#94a3b8">총 Sales <b style="color:#60a5fa">$' + totals.sa.toFixed(0) + '</b></span>' +
+    '<span style="color:#94a3b8">총 주문 <b style="color:#e2e8f0">' + totals.o + '</b></span>' +
+    '<span style="color:#94a3b8">평균 ACOS <b style="color:' + (totAcos > 0.5 ? '#f87171' : totAcos > 0.3 ? '#fbbf24' : '#34d399') + '">' + (totAcos*100).toFixed(1) + '%</b></span>' +
+    '<span style="color:#94a3b8">평균 ROAS <b style="color:#34d399">' + totRoas.toFixed(2) + 'x</b></span>' +
+  '</div>';
+
+  arr.slice(0, 30).forEach(function(g){
+    var prod = productLabel(g.portfolio);
+    var gAcos = g.tot.sa > 0 ? g.tot.s / g.tot.sa : 0;
+    var gRoas = g.tot.s > 0 ? g.tot.sa / g.tot.s : 0;
+    var aColor = gAcos > 0.5 ? '#f87171' : gAcos > 0.3 ? '#fbbf24' : '#34d399';
+    html += '<details style="margin-bottom:8px;background:#0b1220;border:1px solid #1e293b;border-radius:6px" open>' +
+      '<summary style="padding:10px 12px;cursor:pointer;list-style:none">' +
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+          '<span style="color:#a78bfa;font-weight:700">' + escapeHtml(prod) + '</span>' +
+          '<span style="color:#64748b">·</span>' +
+          '<span style="font-family:ui-monospace,monospace;color:#fef3c7;font-weight:600">' + escapeHtml(g.term) + '</span>' +
+          '<span style="color:#64748b">·</span>' +
+          '<span style="color:#94a3b8;font-size:11px">' + escapeHtml(g.matchType || 'BROAD') + '</span>' +
+          '<span style="flex:1"></span>' +
+          '<span style="color:#94a3b8;font-size:11px">클릭 ' + fmtN(g.tot.c) + '</span>' +
+          '<span style="color:#f87171;font-size:11px">$' + g.tot.s.toFixed(0) + '</span>' +
+          '<span style="color:#60a5fa;font-size:11px">→ $' + g.tot.sa.toFixed(0) + '</span>' +
+          '<span style="color:#94a3b8;font-size:11px">주문 ' + g.tot.o + '</span>' +
+          '<span style="font-size:11px;font-weight:700;color:' + aColor + '">ACOS ' + (gAcos*100).toFixed(1) + '%</span>' +
+          '<span style="color:#34d399;font-size:11px;font-weight:600">' + gRoas.toFixed(2) + 'x</span>' +
+        '</div>' +
+      '</summary>';
+
+    // 주차 테이블
+    var weeks = g.weeks.slice().sort(function(a,b){ return wkRank(a.w) - wkRank(b.w); });
+    html += '<div style="padding:0 12px 12px 12px;overflow-x:auto">' +
+      '<table class="wow-table" style="font-size:11.5px;width:100%;margin-top:6px">' +
+        '<thead><tr>' +
+          '<th>주차</th><th>노출</th><th>클릭</th><th>CTR</th><th>CPC</th><th>Spend</th><th>주문</th><th>Sales</th><th>ACOS</th><th>ROAS</th>' +
+        '</tr></thead><tbody>' +
+        weeks.map(function(r){
+          var ctr = r.i > 0 ? r.c / r.i : 0;
+          var cpc = r.c > 0 ? r.s / r.c : 0;
+          var acos = r.sa > 0 ? r.s / r.sa : 0;
+          var roas = r.s > 0 ? r.sa / r.s : 0;
+          var aC = acos > 0.5 ? '#f87171' : acos > 0.3 ? '#fbbf24' : '#34d399';
+          return '<tr>' +
+            '<td style="font-weight:600">' + escapeHtml(r.w) + '</td>' +
+            '<td>' + fmtN(r.i) + '</td>' +
+            '<td>' + fmtN(r.c) + '</td>' +
+            '<td>' + (ctr*100).toFixed(2) + '%</td>' +
+            '<td>$' + cpc.toFixed(2) + '</td>' +
+            '<td style="color:#f87171">$' + r.s.toFixed(2) + '</td>' +
+            '<td>' + r.o + '</td>' +
+            '<td style="color:#60a5fa">$' + r.sa.toFixed(2) + '</td>' +
+            '<td style="color:' + aC + ';font-weight:600">' + (r.sa > 0 ? (acos*100).toFixed(1) + '%' : '∞') + '</td>' +
+            '<td style="color:#34d399">' + roas.toFixed(2) + 'x</td>' +
+          '</tr>';
+        }).join('') +
+      '</tbody></table></div>' +
+    '</details>';
+  });
+
+  if (arr.length > 30) html += '<div style="color:#64748b;font-size:11px;text-align:right;margin-top:4px">+ ' + (arr.length - 30) + ' 그룹 더 (Spend 상위 30개만 표시)</div>';
+
+  box.innerHTML = html;
 }
 
 function renderSearchTermsBody() {

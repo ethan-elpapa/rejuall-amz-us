@@ -429,7 +429,29 @@ function parseSearchTerms(values) {
     roas: w.spend > 0 ? w.sales / w.spend : 0
   }));
 
-  return { agg, byWeek, periods: { all: agg, last1w, last4w, last12w }, weeksSorted };
+  // term × portfolio × matchType × week 플랫 배열 (키워드 검색용)
+  const byTermWeek = [];
+  for (const key in keyWeekMap) {
+    const km = keyWeekMap[key];
+    for (const w in km.weeks) {
+      const ww = km.weeks[w];
+      // 무의미한 0행 제외
+      if (!(ww.i || ww.c || ww.s || ww.sa || ww.o)) continue;
+      byTermWeek.push({
+        t:  km.meta.term,
+        p:  km.meta.portfolio,
+        mt: km.meta.matchType,
+        w:  w,
+        i:  ww.i,
+        c:  ww.c,
+        s:  +ww.s.toFixed(2),
+        sa: +ww.sa.toFixed(2),
+        o:  ww.o
+      });
+    }
+  }
+
+  return { agg, byWeek, periods: { all: agg, last1w, last4w, last12w }, weeksSorted, byTermWeek };
 }
 
 function parseGoalSheet(values) {
@@ -550,6 +572,7 @@ module.exports = async (req, res) => {
       searchTermsWeekly: stParsed.byWeek,
       searchTermsPeriods: stParsed.periods,
       searchTermsWeeks: stParsed.weeksSorted,
+      searchTermsByTermWeek: stParsed.byTermWeek,
       updatedAt: new Date().toISOString(),
       diag: {
         rawSheet: rawSheet ? rawSheet.title : null,
