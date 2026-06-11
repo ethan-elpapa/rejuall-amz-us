@@ -990,70 +990,32 @@
     </div>
 
     <!-- 서치텀 분석 -->
-    <div class="section-header" style="font-size:16px;margin-top:30px">서치텀 분석 &amp; 대안</div>
-
-    <!-- 임계치 컨트롤 -->
-    <div class="card" style="margin-bottom:14px;padding:14px">
-      <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:12px;color:#94a3b8">
-        <div>
-          <span style="margin-right:6px">목표 ACOS</span>
-          <input type="number" id="stTargetAcos" value="35" min="5" max="100" step="1"
-            style="width:60px;background:#1e293b;border:1px solid var(--border);border-radius:6px;color:#e2e8f0;padding:4px 6px;font-size:12px"> %
-        </div>
-        <div>
-          <span style="margin-right:6px">최소 클릭</span>
-          <input type="number" id="stMinClicks" value="10" min="1" step="1"
-            style="width:60px;background:#1e293b;border:1px solid var(--border);border-radius:6px;color:#e2e8f0;padding:4px 6px;font-size:12px">
-        </div>
-        <div>
-          <span style="margin-right:6px">최소 광고비</span> $<input type="number" id="stMinSpend" value="20" min="0" step="5"
-            style="width:70px;background:#1e293b;border:1px solid var(--border);border-radius:6px;color:#e2e8f0;padding:4px 6px;font-size:12px;margin-left:2px">
-        </div>
-        <div>
-          <span style="margin-right:6px">포트폴리오</span>
-          <select id="stPortfolioFilter" class="filter-select" style="min-width:140px;padding:4px 8px;font-size:12px">
-            <option value="">전체</option>
-          </select>
-        </div>
-        <button id="stApplyBtn" class="toggle-btn active" style="padding:5px 14px">적용</button>
-      </div>
+    <div class="section-header" style="font-size:16px;margin-top:30px">
+      서치텀 추천 액션
+      <span style="font-size:11px;color:#64748b;font-weight:400;margin-left:8px">· 상단 제품 필터에 따라 결과가 바뀝니다</span>
     </div>
 
-    <!-- 요약 -->
-    <div class="grid-3" style="margin-bottom:14px">
-      <div class="card" style="padding:14px">
-        <div style="color:#f87171;font-weight:600;font-size:12px;margin-bottom:4px">🔴 Negative KW 후보</div>
-        <div style="font-size:24px;font-weight:700;color:#f87171" id="stNegCount">—</div>
-        <div style="font-size:11px;color:#64748b" id="stNegSpend">잠재 절감액 —</div>
+    <div class="grid-2" style="gap:14px;margin-bottom:20px" id="stRecGrid">
+      <!-- 4개 카드: Negative / Bid Up / Exact / Product Target -->
+      <div class="card" style="padding:16px">
+        <div style="color:#f87171;font-weight:700;font-size:13px;margin-bottom:4px">🔴 Negative 추가 추천</div>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:10px">광고비는 쓰는데 주문이 없는 키워드</div>
+        <div id="stRecNeg" style="font-size:12.5px;line-height:1.6"></div>
       </div>
-      <div class="card" style="padding:14px">
-        <div style="color:#34d399;font-weight:600;font-size:12px;margin-bottom:4px">🟢 입찰 증액 후보</div>
-        <div style="font-size:24px;font-weight:700;color:#34d399" id="stUpCount">—</div>
-        <div style="font-size:11px;color:#64748b" id="stUpSales">기여 매출 —</div>
+      <div class="card" style="padding:16px">
+        <div style="color:#34d399;font-weight:700;font-size:13px;margin-bottom:4px">🟢 입찰 증액 추천</div>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:10px">ACOS 낮고 효율 좋은 키워드 (예산 키울 만함)</div>
+        <div id="stRecUp" style="font-size:12.5px;line-height:1.6"></div>
       </div>
-      <div class="card" style="padding:14px">
-        <div style="color:#60a5fa;font-weight:600;font-size:12px;margin-bottom:4px">🔵 Exact Match 신규 후보</div>
-        <div style="font-size:24px;font-weight:700;color:#60a5fa" id="stExactCount">—</div>
-        <div style="font-size:11px;color:#64748b" id="stExactSales">검증 매출 —</div>
+      <div class="card" style="padding:16px">
+        <div style="color:#60a5fa;font-weight:700;font-size:13px;margin-bottom:4px">🔵 Exact Match 분리 추천</div>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:10px">주문이 검증된 키워드는 Exact로 별도 캠페인</div>
+        <div id="stRecExact" style="font-size:12.5px;line-height:1.6"></div>
       </div>
-    </div>
-
-    <!-- 탭 -->
-    <div style="display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border)">
-      <button class="st-tab active" data-st-tab="neg"   style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:#f87171;border-bottom:2px solid #f87171;margin-bottom:-1px">🔴 Negative 후보</button>
-      <button class="st-tab" data-st-tab="up"           style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px">🟢 입찰 증액 후보</button>
-      <button class="st-tab" data-st-tab="exact"        style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px">🔵 Exact 신규 후보</button>
-      <button class="st-tab" data-st-tab="top"          style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px">🏆 Top 30 서치텀</button>
-    </div>
-
-    <div class="card" style="margin-bottom:20px;padding:0">
-      <div style="overflow-x:auto;max-height:600px;overflow-y:auto">
-        <table class="wow-table" id="stTable" style="font-size:12px">
-          <thead style="position:sticky;top:0;background:#0f1626;z-index:1">
-            <tr id="stTableHead"></tr>
-          </thead>
-          <tbody id="stTableBody"></tbody>
-        </table>
+      <div class="card" style="padding:16px">
+        <div style="color:#a78bfa;font-weight:700;font-size:13px;margin-bottom:4px">🟣 Product Target 추천</div>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:10px">경쟁사 ASIN 페이지에서 잘 팔린 항목</div>
+        <div id="stRecPT" style="font-size:12.5px;line-height:1.6"></div>
       </div>
     </div>
   </div>
@@ -1891,6 +1853,132 @@ function renderAdsView() {
   renderAdPortfolio(rows);
   renderAdPortfolioWeekly(rows);
   renderSearchTerms();
+}
+
+// 포트폴리오 이름에서 ASIN 추출 (예: 'B0FGDR67R5-JK-A3XQ-1S4N' -> 'B0FGDR67R5')
+// 또는 제품명 매칭 (예: 'PDRN MAX' -> B0FN7LDTB7)
+function portfolioToAsin(portfolio) {
+  if (!portfolio) return '';
+  var m = portfolio.match(/B0[A-Z0-9]{8}/);
+  if (m) return m[0];
+  // 제품명 매칭
+  var pmap = STATE.productMap || {};
+  var p = portfolio.toLowerCase();
+  for (var asin in pmap) {
+    var nm = (pmap[asin] || '').toLowerCase();
+    if (nm && (p.indexOf(nm) > -1 || nm.indexOf(p) > -1)) return asin;
+  }
+  return '';
+}
+
+function productLabel(asinOrPortfolio) {
+  var pmap = STATE.productMap || {};
+  var asin = (asinOrPortfolio.match && asinOrPortfolio.match(/B0[A-Z0-9]{8}/)) ? asinOrPortfolio.match(/B0[A-Z0-9]{8}/)[0] : asinOrPortfolio;
+  return pmap[asin] || asinOrPortfolio;
+}
+
+function isAsinLike(term) {
+  return /^B0[A-Z0-9]{8}$/i.test(String(term || '').trim());
+}
+
+function renderSearchTerms() {
+  var negEl   = document.getElementById('stRecNeg');
+  var upEl    = document.getElementById('stRecUp');
+  var exactEl = document.getElementById('stRecExact');
+  var ptEl    = document.getElementById('stRecPT');
+  if (!negEl || !upEl || !exactEl || !ptEl) return;
+
+  var all = STATE.searchTerms || [];
+  // ASIN 필터 적용 (포트폴리오 이름에서 ASIN 추출하여 매칭)
+  var asinFilter = AD_STATE.asinFilter || '';
+  var rows = all.filter(function(r){
+    if (!r.term || !r.portfolio) return false;
+    if (!asinFilter) return true;
+    var a = portfolioToAsin(r.portfolio);
+    return a === asinFilter;
+  });
+
+  if (!rows.length) {
+    var empty = '<div style="color:#64748b;font-size:12px">데이터 없음</div>';
+    negEl.innerHTML = upEl.innerHTML = exactEl.innerHTML = ptEl.innerHTML = empty;
+    return;
+  }
+
+  // ── 분류 ────────────────────────────────────────────
+  var TARGET_ACOS = 0.35; // 35%
+  var negList = [], upList = [], exactList = [], ptList = [];
+
+  rows.forEach(function(r){
+    var isAsinTerm = isAsinLike(r.term);
+
+    // 🔴 Negative: clicks>=10, spend>=$15, orders==0
+    if (!isAsinTerm && r.clicks >= 10 && r.spend >= 15 && r.orders === 0) {
+      negList.push(r);
+    }
+    // 🟢 Bid Up: orders>=3, acos < target, clicks>=10
+    if (r.orders >= 3 && r.acos > 0 && r.acos < TARGET_ACOS && r.clicks >= 10) {
+      upList.push(r);
+    }
+    // 🔵 Exact 분리: orders>=3, matchType != EXACT, ASIN 형태 아님
+    if (!isAsinTerm && r.orders >= 3 && String(r.matchType || '').toUpperCase().indexOf('EXACT') === -1) {
+      exactList.push(r);
+    }
+    // 🟣 Product Target: term이 ASIN 형태, orders>=2 OR (clicks>=15 & acos < 0.5)
+    if (isAsinTerm && (r.orders >= 2 || (r.clicks >= 15 && r.acos > 0 && r.acos < 0.5))) {
+      ptList.push(r);
+    }
+  });
+
+  // 정렬: spend 큰 순(neg), roas 큰 순(up), orders 큰 순(exact), orders 큰 순(pt)
+  negList.sort(function(a,b){ return b.spend - a.spend; });
+  upList.sort(function(a,b){ return b.roas - a.roas; });
+  exactList.sort(function(a,b){ return b.orders - a.orders; });
+  ptList.sort(function(a,b){ return b.orders - a.orders; });
+
+  // ── 렌더링 ──────────────────────────────────────────
+  function fmtItem(r, accent, body) {
+    var prod = productLabel(r.portfolio);
+    return '<div style="padding:8px 10px;margin-bottom:6px;background:#1e293b66;border-left:3px solid '+accent+';border-radius:4px">' +
+      '<div style="font-weight:600;color:#e2e8f0;margin-bottom:2px">' +
+        '<span style="color:'+accent+'">' + prod + '</span> · ' +
+        '<span style="font-family:monospace;font-size:12px">' + escapeHtml(r.term) + '</span>' +
+      '</div>' +
+      '<div style="color:#94a3b8;font-size:11.5px">' + body + '</div>' +
+    '</div>';
+  }
+
+  function renderList(el, list, accent, builder, emptyMsg) {
+    if (!list.length) {
+      el.innerHTML = '<div style="color:#64748b;font-size:12px;padding:8px 0">' + emptyMsg + '</div>';
+      return;
+    }
+    el.innerHTML = list.slice(0, 10).map(function(r){ return fmtItem(r, accent, builder(r)); }).join('') +
+      (list.length > 10 ? '<div style="color:#64748b;font-size:11px;text-align:right;margin-top:4px">+ ' + (list.length - 10) + ' 건 더</div>' : '');
+  }
+
+  renderList(negEl, negList, '#f87171', function(r){
+    return '클릭 ' + fmtN(r.clicks) + '회 · spend $' + r.spend.toFixed(0) + ' · 주문 0 → <b style="color:#f87171">Negative Exact로 추가</b>';
+  }, '해당 제품에 Negative 추천 키워드 없음');
+
+  renderList(upEl, upList, '#34d399', function(r){
+    return '주문 ' + r.orders + ' · ACOS ' + (r.acos*100).toFixed(1) + '% · ROAS ' + r.roas.toFixed(2) + 'x → <b style="color:#34d399">입찰 +20~30% 증액</b>';
+  }, '효율 좋은 입찰 증액 후보 없음');
+
+  renderList(exactEl, exactList, '#60a5fa', function(r){
+    var mt = String(r.matchType || 'BROAD').toUpperCase();
+    return '주문 ' + r.orders + ' · matchType ' + mt + ' · ROAS ' + r.roas.toFixed(2) + 'x → <b style="color:#60a5fa">Exact Match 캠페인 신설</b>';
+  }, '검증된 검색어 없음 (orders 3+)');
+
+  renderList(ptEl, ptList, '#a78bfa', function(r){
+    var roasTxt = r.roas > 0 ? r.roas.toFixed(2) + 'x' : '—';
+    return '경쟁 ASIN · 주문 ' + r.orders + ' · ROAS ' + roasTxt + ' · 클릭 ' + r.clicks + ' → <b style="color:#a78bfa">Product Targeting 캠페인 진행</b>';
+  }, 'Product Target 추천 ASIN 없음');
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+  });
 }
 
 function renderAdKpis(rows) {
