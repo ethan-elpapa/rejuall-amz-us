@@ -2060,14 +2060,24 @@ function renderStKeywordResults() {
     return;
   }
 
-  // (term, portfolio, matchType) 단위로 그룹핑하고 그 안에서 주차별 행
+  // (term, portfolio) 단위로 그룹핑 — matchType은 합산
   var groups = {};
   matches.forEach(function(r){
-    var k = r.t + '|' + r.p + '|' + r.mt;
-    if (!groups[k]) groups[k] = { term: r.t, portfolio: r.p, matchType: r.mt, weeks: [], tot: { i:0,c:0,s:0,sa:0,o:0 } };
-    groups[k].weeks.push(r);
-    var t = groups[k].tot;
+    var k = r.t + '|' + r.p;
+    if (!groups[k]) groups[k] = { term: r.t, portfolio: r.p, matchTypes: {}, weekMap: {}, tot: { i:0,c:0,s:0,sa:0,o:0 } };
+    var g = groups[k];
+    if (r.mt) g.matchTypes[r.mt] = true;
+    // 같은 주차는 합산
+    if (!g.weekMap[r.w]) g.weekMap[r.w] = { w: r.w, i:0, c:0, s:0, sa:0, o:0 };
+    var ww = g.weekMap[r.w];
+    ww.i += r.i; ww.c += r.c; ww.s += r.s; ww.sa += r.sa; ww.o += r.o;
+    var t = g.tot;
     t.i += r.i; t.c += r.c; t.s += r.s; t.sa += r.sa; t.o += r.o;
+  });
+  // weekMap → weeks 배열
+  Object.keys(groups).forEach(function(k){
+    var g = groups[k];
+    g.weeks = Object.values(g.weekMap);
   });
 
   // 주차 정렬키 (W12 < W1 < W2 ...)
@@ -2109,7 +2119,7 @@ function renderStKeywordResults() {
           '<span style="color:#64748b">·</span>' +
           '<span style="font-family:ui-monospace,monospace;color:#fef3c7;font-weight:600">' + escapeHtml(g.term) + '</span>' +
           '<span style="color:#64748b">·</span>' +
-          '<span style="color:#94a3b8;font-size:11px">' + escapeHtml(g.matchType || 'BROAD') + '</span>' +
+          '<span style="color:#94a3b8;font-size:11px">' + escapeHtml(Object.keys(g.matchTypes).join(' + ') || 'BROAD') + '</span>' +
           '<span style="flex:1"></span>' +
           '<span style="color:#94a3b8;font-size:11px">클릭 ' + fmtN(g.tot.c) + '</span>' +
           '<span style="color:#f87171;font-size:11px">$' + g.tot.s.toFixed(0) + '</span>' +
@@ -2123,9 +2133,18 @@ function renderStKeywordResults() {
     // 주차 테이블
     var weeks = g.weeks.slice().sort(function(a,b){ return wkRank(a.w) - wkRank(b.w); });
     html += '<div style="padding:0 12px 12px 12px;overflow-x:auto">' +
-      '<table class="wow-table" style="font-size:11.5px;width:100%;margin-top:6px">' +
-        '<thead><tr>' +
-          '<th>주차</th><th>노출</th><th>클릭</th><th>CTR</th><th>CPC</th><th>Spend</th><th>주문</th><th>Sales</th><th>ACOS</th><th>ROAS</th>' +
+      '<table class="st-week-table" style="font-size:11.5px;width:100%;margin-top:6px;border-collapse:collapse;color:#e2e8f0">' +
+        '<thead><tr style="background:#1e293b;color:#cbd5e1">' +
+          '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid #334155">주차</th>' +
+          '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid #334155">노출</th>' +
+          '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid #334155">클릭</th>' +
+          '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid #334155">CTR</th>' +
+          '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid #334155">CPC</th>' +
+          '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid #334155">Spend</th>' +
+          '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid #334155">주문</th>' +
+          '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid #334155">Sales</th>' +
+          '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid #334155">ACOS</th>' +
+          '<th style="padding:6px 8px;text-align:right;border-bottom:1px solid #334155">ROAS</th>' +
         '</tr></thead><tbody>' +
         weeks.map(function(r){
           var ctr = r.i > 0 ? r.c / r.i : 0;
@@ -2133,17 +2152,19 @@ function renderStKeywordResults() {
           var acos = r.sa > 0 ? r.s / r.sa : 0;
           var roas = r.s > 0 ? r.sa / r.s : 0;
           var aC = acos > 0.5 ? '#f87171' : acos > 0.3 ? '#fbbf24' : '#34d399';
+          var tdL = 'padding:5px 8px;border-bottom:1px solid #1e293b;color:#e2e8f0';
+          var tdR = tdL + ';text-align:right';
           return '<tr>' +
-            '<td style="font-weight:600">' + escapeHtml(r.w) + '</td>' +
-            '<td>' + fmtN(r.i) + '</td>' +
-            '<td>' + fmtN(r.c) + '</td>' +
-            '<td>' + (ctr*100).toFixed(2) + '%</td>' +
-            '<td>$' + cpc.toFixed(2) + '</td>' +
-            '<td style="color:#f87171">$' + r.s.toFixed(2) + '</td>' +
-            '<td>' + r.o + '</td>' +
-            '<td style="color:#60a5fa">$' + r.sa.toFixed(2) + '</td>' +
-            '<td style="color:' + aC + ';font-weight:600">' + (r.sa > 0 ? (acos*100).toFixed(1) + '%' : '∞') + '</td>' +
-            '<td style="color:#34d399">' + roas.toFixed(2) + 'x</td>' +
+            '<td style="' + tdL + ';font-weight:700;color:#fef3c7">' + escapeHtml(r.w) + '</td>' +
+            '<td style="' + tdR + '">' + fmtN(r.i) + '</td>' +
+            '<td style="' + tdR + '">' + fmtN(r.c) + '</td>' +
+            '<td style="' + tdR + ';color:#cbd5e1">' + (ctr*100).toFixed(2) + '%</td>' +
+            '<td style="' + tdR + ';color:#cbd5e1">$' + cpc.toFixed(2) + '</td>' +
+            '<td style="' + tdR + ';color:#f87171;font-weight:600">$' + r.s.toFixed(2) + '</td>' +
+            '<td style="' + tdR + '">' + r.o + '</td>' +
+            '<td style="' + tdR + ';color:#60a5fa;font-weight:600">$' + r.sa.toFixed(2) + '</td>' +
+            '<td style="' + tdR + ';color:' + aC + ';font-weight:700">' + (r.sa > 0 ? (acos*100).toFixed(1) + '%' : '∞') + '</td>' +
+            '<td style="' + tdR + ';color:#34d399;font-weight:600">' + roas.toFixed(2) + 'x</td>' +
           '</tr>';
         }).join('') +
       '</tbody></table></div>' +
